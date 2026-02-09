@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.yunkesoftware.www.adm.mapper.SysUserMapper">
+
+    <resultMap id="ResultMapWithRole" type="com.yunkesoftware.www.adm.vo.SysUserVo">
+        <id column="id" property="id"/>
+        <result column="nick_name" property="nickName"/>
+        <result column="username" property="username"/>
+        <result column="icon" property="icon"/>
+        <result column="password" property="password"/>
+        <result column="nickName" property="nickName"/>
+        <collection property="roleVo" ofType="com.yunkesoftware.www.adm.entity.SysRole">
+            <id column="roleId" property="id"/>
+            <result column="name" property="name"/>
+            <result column="code" property="code"/>
+        </collection>
+    </resultMap>
+
+    <select id="pageWithRole" resultMap="ResultMapWithRole">
+        SELECT
+            su.id,
+            su.username,
+            su.icon,
+            su.create_time,
+            su.nick_name,
+            su.update_time,
+            su.`status`,
+            sr.id AS roleId,
+            sr.`name`,
+            sr.`code`
+        FROM sys_user su
+            LEFT JOIN sys_user_role sur ON sur.user_id = su.id
+            LEFT JOIN sys_role sr ON sr.id = sur.role_id
+        <where>
+            <if test="param.username != null and param.username != ''">
+                AND su.username LIKE CONCAT('%',#{param.username},'%')
+            </if>
+        </where>
+    </select>
+
+</mapper>
+

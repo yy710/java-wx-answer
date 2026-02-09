@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunkesoftware.www.adm.mapper.AreaMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yunkesoftware.www.adm.entity.Area">
+        <id column="area_id" property="areaId" />
+        <result column="area_name" property="areaName" />
+        <result column="parent_id" property="parentId" />
+        <result column="level" property="level" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        area_id, area_name, parent_id, level
+    </sql>
+
+</mapper>

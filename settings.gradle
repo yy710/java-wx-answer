@@ -1,0 +1,5 @@
+rootProject.name = 'city-walk-java'
+include(":adm", ":web",':common')
+include 'adm'
+include 'common'
+

@@ -1,0 +1,29 @@
+spring:
+  servlet:
+    multipart:
+      max-request-size: 100MB
+      max-file-size: 100MB
+  profiles:
+    active: dev
+
+logging:
+  level:
+    org.springframework.web: info
+
+wx:
+  miniapp:
+    configs:
+      - appId:   # 小程序微信公众平台appId
+        secret:   # 小程序微信公众平台api秘钥
+        token: 
+        aesKey: 
+        msgDataFormat: JSON
+
+upload:
+  uploadType: cos
+  serverUrl: 
+  accessKey: 
+  secretKey: 
+  bucket: 
+  region: 
+  post: ?x-oss-process=video/snapshot,t_1,m_fast

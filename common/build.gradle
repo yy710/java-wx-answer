@@ -1,0 +1,20 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.yunkesoftware.www'
+version = '1.0.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    runtimeOnly "${lib.'mybatisGenerator'}"
+    compileOnly "${lib.'mybatisGenerator'}"
+    implementation "${lib.'okhttp'}"
+}
+
+test {
+    useJUnitPlatform()
+}

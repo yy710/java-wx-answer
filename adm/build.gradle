@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.1.0'
+}
+
+group = 'com.yunkesoftware.www'
+version = '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api project(":common")
+    implementation 'com.google.zxing:core:3.4.1'
+    implementation 'com.google.zxing:javase:3.4.1'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+bootJar{
+    archiveBaseName = 'city-adm'
+    mainClass  =  'com.yunkesoftware.www.AdmApplication'
+
+}

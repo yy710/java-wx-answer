@@ -1,0 +1,74 @@
+package ${package.Controller};
+
+#if(${urli.equals("sys")})
+import com.yunkesoftware.www.annotation.EasyExcelExport;
+#end
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.yunkesoftware.www.result.CommonResult;
+#if(${urli.equals("sys")})
+import com.yunkesoftware.www.mybatisPlus.support.Condition;
+#end
+import ${package.Service}.${table.serviceName};
+import ${package.Entity}.${entity};
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * @author ${author}
+ * @since ${date}
+ */
+@Tag(name = "$!{table.comment}")
+@RestController
+@RequestMapping("#if(${urli})/${urli}#end/#if(${controllerMappingHyphenStyle})${controllerMappingHyphen}#else${table.entityPath}#end")
+public class ${table.controllerName} {
+    @Resource
+    private ${table.serviceName} ${table.entityPath}Service;
+
+    @Operation(summary ="获取全部列表")
+    @PostMapping("/list")
+#if(${urli.equals("sys")})
+    @EasyExcelExport()
+#end
+    public CommonResult<List<${entity}>> list(@RequestBody ${entity} ${table.entityPath}) {
+        return CommonResult.success(${table.entityPath}Service.list(new LambdaQueryWrapper<>(${table.entityPath})));
+    }
+#if(${urli.equals("sys")})
+    @Operation(summary ="分页")
+    @PostMapping("/page")
+    @EasyExcelExport()
+    public CommonResult<Page<${entity}>> page(@RequestBody ${entity} ${table.entityPath}) {
+        return CommonResult.success(${table.entityPath}Service.page(new Page<>(${table.entityPath}.getPageNum(), ${table.entityPath}.getPageSize()), Condition.getQueryWrapper(${table.entityPath}.getSearchMap(),${table.entityPath})));
+    }
+#else
+    @Operation(summary ="分页")
+    @PostMapping("/page")
+    public CommonResult<Page<${entity}>> page(@RequestBody ${entity} ${table.entityPath}) {
+        return CommonResult.success(${table.entityPath}Service.page(new Page<>(${table.entityPath}.getPageNum(), ${table.entityPath}.getPageSize()), new LambdaQueryWrapper<>(${table.entityPath})));
+    }
+#end
+
+    @Operation(summary ="根据Id查询")
+    @GetMapping("/getOneById")
+    public CommonResult<${entity}> getOneById(@RequestParam("id") String id) {
+        return CommonResult.success(${table.entityPath}Service.getById(id));
+    }
+#if(${urli.equals("sys")})
+    @Operation(summary ="添加或修改")
+    @PostMapping("/addOrModify")
+    public CommonResult<Boolean> addOrModify(@RequestBody ${entity} ${table.entityPath}) {
+        return CommonResult.status(${table.entityPath}Service.saveOrUpdate(${table.entityPath}));
+    }
+
+
+    @Operation(summary ="通过Id批量删除")
+    @DeleteMapping("/delete")
+    public CommonResult<Boolean> delete(@RequestBody List<String> ids) {
+        return CommonResult.status(${table.entityPath}Service.removeByIds(ids));
+    }
+#end
+}

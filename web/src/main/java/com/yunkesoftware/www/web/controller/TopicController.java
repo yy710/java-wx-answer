@@ -1,0 +1,30 @@
+package com.yunkesoftware.www.web.controller;
+
+import com.yunkesoftware.www.result.CommonResult;
+import com.yunkesoftware.www.web.service.TopicService;
+import com.yunkesoftware.www.web.entity.Topic;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * @author yk
+ * @since 2026-01-16
+ */
+@Tag(name = "答题活动-题目信息")
+@RestController
+@RequestMapping("/wx/topic")
+public class TopicController {
+    @Resource
+    private TopicService topicService;
+
+    @Operation(summary = "获取全部列表")
+    @GetMapping("/list")
+    public CommonResult<List<Topic>> list(@RequestParam(value = "topicLineId") String topicLineId) {
+        List<Topic> resultList = topicService.listByQuery(topicLineId);
+        return CommonResult.success(resultList);
+    }
+}

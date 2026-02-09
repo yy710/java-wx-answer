@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunkesoftware.www.web.mapper.FeedbackMapper">
+
+    <resultMap type="com.yunkesoftware.www.web.entity.Feedback" id="FeedbackMap">
+        <result property="id" column="id" />
+        <result property="userId" column="user_id" />
+        <result property="problemType" column="problem_type" />
+        <result property="handleFlag" column="handle_flag" />
+        <result property="content" column="content" />
+        <result property="imgUrl" column="img_url" />
+        <result property="handelResponse" column="handel_response" />
+        <result property="createTime" column="create_time" />
+        <result property="updateTime" column="update_time" />
+    </resultMap>
+
+ 
+</mapper>

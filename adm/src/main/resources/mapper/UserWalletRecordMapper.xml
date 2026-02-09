@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunkesoftware.www.adm.mapper.UserWalletRecordMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yunkesoftware.www.adm.entity.UserWalletRecord">
+        <id column="id" property="id" />
+        <result column="wallet_id" property="walletId" />
+        <result column="change_amount" property="changeAmount" />
+        <result column="after_amount" property="afterAmount" />
+        <result column="event_id" property="eventId" />
+        <result column="event_type" property="eventType" />
+        <result column="status" property="status" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, wallet_id, change_amount, after_amount, event_id, event_type, status, create_time
+    </sql>
+    <select id="pageByQuery" resultType="com.yunkesoftware.www.adm.entity.UserWalletRecord">
+        SELECT
+        uwr.id,
+        uwr.change_amount,
+        uwr.after_amount,
+        uwr.event_type,
+        uwr.status,
+        uwr.create_time,
+        yu.nick_name
+        FROM user_wallet_record uwr
+        LEFT JOIN user_wallet uw ON uw.id = uwr.wallet_id
+        LEFT JOIN yk_user yu ON uw.user_id = yu.id
+        <where>
+            <if test="param.nickName != null and param.nickName != ''">
+                AND yu.nick_name LIKE CONCAT('%',#{param.nickName},'%')
+            </if>
+            <if test="param.walletId != null and param.walletId != ''">
+                AND uwr.wallet_id = #{param.walletId}
+            </if>
+        </where>
+        ORDER BY uwr.id DESC
+    </select>
+
+</mapper>

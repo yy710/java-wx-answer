@@ -1,0 +1,47 @@
+plugins {
+    id 'java'
+}
+group = 'com.yunkesoftware.www'
+version = '1.0'
+repositories {
+    mavenLocal()
+    maven { url "https://maven.aliyun.com/repository/public" }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+    maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+    maven { url 'https://maven.aliyun.com/repository/central' }
+    maven { url 'https://maven.aliyun.com/repository/jcenter' }
+    maven { url 'https://maven.aliyun.com/repository/google' }
+    maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+    maven { url 'https://maven.aliyun.com/repository/spring' }
+    maven { url 'https://maven.aliyun.com/repository/spring-plugin' }
+    maven { url 'https://maven.aliyun.com/repository/grails-core' }
+    maven { url 'https://maven.aliyun.com/repository/apache-snapshots' }
+    maven { url 'https://mvnrepository.com' }
+    repositories {
+        maven {
+            url 'https://maven.aliyun.com/repository/public'
+        }
+        maven {
+            credentials {
+                username '62beb3c4dbd131f866c5649a'
+                password 'SJblRdz35Mf3'
+            }
+            url 'https://packages.aliyun.com/62beb3d0a61bf880d4cb2137/maven/2248064-snapshot-mvkcsh'
+        }
+    }
+    mavenCentral()
+}
+dependencies {
+    api project(":common")
+    implementation 'org.modelmapper:modelmapper:2.4.1'
+    implementation 'com.open.www:oauth2-sdk:0.1.10.1-SNAPSHOT'
+    implementation 'com.github.binarywang:weixin-java-mp:4.8.0'
+
+}
+test {
+    useJUnitPlatform()
+}
+bootJar{
+    archiveBaseName = 'city-web'
+    mainClass  =  'com.yunkesoftware.www.WebApplication'
+}

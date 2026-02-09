@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunkesoftware.www.adm.mapper.TopicRecordTopicMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yunkesoftware.www.adm.entity.TopicRecordTopic">
+        <id column="id" property="id" />
+        <result column="topic_record_id" property="topicRecordId" />
+        <result column="topic_id" property="topicId" />
+        <result column="topic_title" property="topicTitle" />
+        <result column="reward_amount" property="rewardAmount" />
+        <result column="answer_flag" property="answerFlag" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, topic_record_id, topic_id, topic_title, reward_amount, answer_flag
+    </sql>
+
+</mapper>

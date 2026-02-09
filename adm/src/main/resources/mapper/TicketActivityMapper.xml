@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunkesoftware.www.adm.mapper.TicketActivityMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yunkesoftware.www.adm.entity.TicketActivity">
+        <id column="id" property="id" />
+        <result column="title" property="title" />
+        <result column="start_time" property="startTime" />
+        <result column="end_time" property="endTime" />
+        <result column="ticket_limit" property="ticketLimit" />
+        <result column="ticket_user_num" property="ticketUserNum" />
+        <result column="ticket_total" property="ticketTotal" />
+        <result column="view_num" property="viewNum" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, title, start_time, end_time, ticket_limit, ticket_user_num, ticket_total, view_num, create_time, update_time
+    </sql>
+
+</mapper>

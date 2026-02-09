@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunkesoftware.www.adm.mapper.FeedbackMapper">
+
+    <resultMap type="com.yunkesoftware.www.adm.entity.Feedback" id="FeedbackMap">
+        <result property="id" column="id" />
+        <result property="userId" column="user_id" />
+        <result property="problemType" column="problem_type" />
+        <result property="handleFlag" column="handle_flag" />
+        <result property="content" column="content" />
+        <result property="imgUrl" column="img_url" />
+        <result property="handelResponse" column="handel_response" />
+        <result property="createTime" column="create_time" />
+        <result property="updateTime" column="update_time" />
+    </resultMap>
+
+    <select id="pageByQuery" resultType="com.yunkesoftware.www.adm.entity.Feedback">
+        SELECT
+        yf.id,
+        yf.problem_type,
+        yf.handle_flag,
+        yf.content,
+        yf.img_url,
+        yf.handel_response,
+        yf.create_time,
+        yf.update_time,
+        yu.nick_name,
+        yu.mobile
+        FROM yk_feedback yf
+        LEFT JOIN yk_user yu ON yu.id = yf.user_id
+        <where>
+            <if test="param.nickName != null and param.nickName != ''">
+                AND yu.nick_name LIKE CONCAT('%',#{param.nickName},'%')
+            </if>
+            <if test="param.problemType != null">
+                AND yf.problem_type = #{param.problemType}
+            </if>
+            <if test="param.handleFlag != null">
+                AND yf.handle_flag = #{param.handleFlag}
+            </if>
+        </where>
+        ORDER BY yf.id DESC
+    </select>
+
+
+</mapper>

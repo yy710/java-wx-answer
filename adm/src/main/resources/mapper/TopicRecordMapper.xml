@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunkesoftware.www.adm.mapper.TopicRecordMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yunkesoftware.www.adm.entity.TopicRecord">
+        <id column="id" property="id" />
+        <result column="user_id" property="userId" />
+        <result column="topic_activity_id" property="topicActivityId" />
+        <result column="topic_activity_title" property="topicActivityTitle" />
+        <result column="topic_line_id" property="topicLineId" />
+        <result column="topic_line_title" property="topicLineTitle" />
+        <result column="reward_amount" property="rewardAmount" />
+        <result column="used_time" property="usedTime" />
+        <result column="right_num" property="rightNum" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, user_id, topic_activity_id, topic_activity_title, topic_line_id, topic_line_title, reward_amount, used_time, right_num, create_time
+    </sql>
+    <select id="pageByQuery" resultType="com.yunkesoftware.www.adm.entity.TopicRecord">
+        SELECT
+        tr.id,tr.topic_activity_title,tr.topic_line_title,tr.reward_amount,tr.used_time,tr.right_num,
+        tr.create_time,yu.nick_name
+        FROM topic_record tr
+        LEFT JOIN yk_user yu ON yu.id = tr.user_id
+        <where>
+            <if test="param.topicActivityTitle != null and param.topicActivityTitle != ''">
+                AND tr.topic_activity_title LIKE CONCAT('%',#{param.topicActivityTitle},'%')
+            </if>
+            <if test="param.topicLineTitle != null and param.topicLineTitle != ''">
+                AND tr.topic_line_title LIKE CONCAT('%',#{param.topicLineTitle},'%')
+            </if>
+            <if test="param.nickName != null and param.nickName != ''">
+                AND yu.nick_name LIKE CONCAT('%',#{param.nickName},'%')
+            </if>
+        </where>
+        ORDER BY tr.id DESC
+    </select>
+
+</mapper>

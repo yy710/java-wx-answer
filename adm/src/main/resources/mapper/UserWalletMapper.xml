@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunkesoftware.www.adm.mapper.UserWalletMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yunkesoftware.www.adm.entity.UserWallet">
+        <id column="id" property="id" />
+        <result column="user_id" property="userId" />
+        <result column="type" property="type" />
+        <result column="amount" property="amount" />
+        <result column="version" property="version" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, user_id, type, amount, version
+    </sql>
+    <select id="pageByQuery" resultType="com.yunkesoftware.www.adm.entity.UserWallet">
+        SELECT
+        uw.id,uw.`type`,uw.amount,yu.nick_name
+        FROM user_wallet uw
+        LEFT JOIN yk_user yu ON uw.user_id = yu.id
+        <where>
+            <if test="param.nickName != null and param.nickName != ''">
+                AND uw.nick_name LIKE CONCAT('%',#{param.nickName},'%')
+            </if>
+        </where>
+    </select>
+
+</mapper>
