@@ -24,12 +24,14 @@
         yu.nick_name
         FROM ticket_record tr
         LEFT JOIN yk_user yu ON yu.id = tr.user_id
-        <if test="param.ticketActivityId != null and param.ticketActivityId != ''">
-            AND tr.ticket_activity_id = #{param.ticketActivityId}
-        </if>
-        <if test="param.ticketVideoId != null and param.ticketVideoId != ''">
-            AND tr.ticket_video_id = #{param.ticketVideoId}
-        </if>
+        <where>
+            <if test="param.ticketActivityId != null and param.ticketActivityId != ''">
+                AND tr.ticket_activity_id = #{param.ticketActivityId}
+            </if>
+            <if test="param.ticketVideoId != null and param.ticketVideoId != ''">
+                AND tr.ticket_video_id = #{param.ticketVideoId}
+            </if>
+        </where>
         ORDER BY tr.id DESC
     </select>
 

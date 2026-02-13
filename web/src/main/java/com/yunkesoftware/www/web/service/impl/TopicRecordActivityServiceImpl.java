@@ -4,13 +4,18 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yunkesoftware.www.constant.RedisKey;
+import com.yunkesoftware.www.enums.UserWalletTypeEnum;
+import com.yunkesoftware.www.query.PageCurrency;
 import com.yunkesoftware.www.web.entity.TopicActivity;
 import com.yunkesoftware.www.web.entity.TopicRecordActivity;
 import com.yunkesoftware.www.web.entity.User;
+import com.yunkesoftware.www.web.entity.UserWallet;
 import com.yunkesoftware.www.web.mapper.TopicRecordActivityMapper;
 import com.yunkesoftware.www.web.mapper.UserMapper;
+import com.yunkesoftware.www.web.mapper.UserWalletMapper;
 import com.yunkesoftware.www.web.service.TopicRecordActivityService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.yunkesoftware.www.web.vo.WalletRankVo;
 import jakarta.annotation.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -30,6 +35,8 @@ public class TopicRecordActivityServiceImpl extends ServiceImpl<TopicRecordActiv
     private RedisTemplate<String, Object> redisTemplate;
     @Resource
     private UserMapper userMapper;
+    @Resource
+    private UserWalletMapper userWalletMapper;
 
     @Override
     public Page<TopicRecordActivity> pageByQuery(TopicRecordActivity topicRecordActivity) {
@@ -55,25 +62,43 @@ public class TopicRecordActivityServiceImpl extends ServiceImpl<TopicRecordActiv
 
     @Override
     public Long getRankNum() {
-        TopicActivity topicActivity = (TopicActivity) redisTemplate.opsForValue().get(RedisKey.TOPIC_ACTIVITY);
-        if (topicActivity == null) {
-            return null;
-        }
+//        TopicActivity topicActivity = (TopicActivity) redisTemplate.opsForValue().get(RedisKey.TOPIC_ACTIVITY);
+//        if (topicActivity == null) {
+//            return null;
+//        }
         String userId = StpUtil.getLoginIdAsString();
-        TopicRecordActivity userData = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecordActivity>()
-                .eq(TopicRecordActivity::getUserId, userId)
-                .eq(TopicRecordActivity::getTopicActivityId, topicActivity.getId())
-                .select(TopicRecordActivity::getTotalRewardAmount));
-        if (userData != null) {
-            LambdaQueryWrapper<TopicRecordActivity> queryWrapper = new LambdaQueryWrapper<TopicRecordActivity>()
-                    .eq(TopicRecordActivity::getTopicActivityId, topicActivity.getId());
-
-            queryWrapper.ne(TopicRecordActivity::getUserId, userId)
-                    .ge(TopicRecordActivity::getTotalRewardAmount, userData.getTotalRewardAmount());
-            Long preNum = baseMapper.selectCount(queryWrapper);
-            return preNum + 1;
+//        TopicRecordActivity userData = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecordActivity>()
+//                .eq(TopicRecordActivity::getUserId, userId)
+//                .eq(TopicRecordActivity::getTopicActivityId, topicActivity.getId())
+//                .select(TopicRecordActivity::getTotalRewardAmount));
+//        if (userData != null) {
+//            LambdaQueryWrapper<TopicRecordActivity> queryWrapper = new LambdaQueryWrapper<TopicRecordActivity>()
+//                    .eq(TopicRecordActivity::getTopicActivityId, topicActivity.getId());
+//
+//            queryWrapper.ne(TopicRecordActivity::getUserId, userId)
+//                    .ge(TopicRecordActivity::getTotalRewardAmount, userData.getTotalRewardAmount());
+//            Long preNum = baseMapper.selectCount(queryWrapper);
+//            return preNum + 1;
+//        } else {
+//            return null;
+//        }
+        Long resultNum;
+        UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
+                .eq(UserWallet::getUserId, userId)
+                .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
+        if (userWallet != null) {
+            resultNum = userWalletMapper.selectCount(new LambdaQueryWrapper<UserWallet>().
+                    ne(UserWallet::getId, userWallet.getId())
+                    .gt(UserWallet::getAmount, userWallet.getAmount()));
         } else {
-            return null;
+            resultNum = userWalletMapper.selectCount(null);
         }
+        return resultNum + 1;
+    }
+
+    @Override
+    public Page<WalletRankVo> pageRank(PageCurrency query) {
+        Page<WalletRankVo> pageParam = new Page<>(query.getPageNum(), query.getPageSize());
+        return userWalletMapper.pageRank(pageParam);
     }
 }

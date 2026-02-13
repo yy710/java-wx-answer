@@ -2,16 +2,10 @@ package com.yunkesoftware.www.adm.entity;
 
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.annotation.ExcelIgnore;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.yunkesoftware.www.utils.LocalDateUtils;
 import com.yunkesoftware.www.query.PageCurrency;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-
-import java.io.Serializable;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
@@ -62,15 +56,7 @@ public class TopicLine extends PageCurrency {
     @ExcelProperty("答题用户数")
     private Integer userNum;
 
-    @Schema(description = "图片")
-    @TableField("pic")
-    private String pic;
-
-    @Schema(description = "图片高度")
-    @TableField("height")
-    private Double height;
-
-    @Schema(description = "图片宽度")
-    @TableField("width")
-    private Double width;
+    @Schema(description = "描述")
+    @TableField("descr")
+    private String descr;
 }

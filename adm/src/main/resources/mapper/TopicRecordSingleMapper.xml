@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunkesoftware.www.adm.mapper.TopicRecordSingleMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yunkesoftware.www.adm.entity.TopicRecordSingle">
+        <id column="id" property="id" />
+        <result column="topic_id" property="topicId" />
+        <result column="topic_title" property="topicTitle" />
+        <result column="user_id" property="userId" />
+        <result column="right_flag" property="rightFlag" />
+        <result column="reward_amount" property="rewardAmount" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, topic_id, topic_title, user_id, right_flag, reward_amount, create_time
+    </sql>
+    <select id="pageByQuery" resultType="com.yunkesoftware.www.adm.entity.TopicRecordSingle">
+        SELECT
+            trs.id,
+            trs.topic_title,
+            trs.right_flag,
+            trs.reward_amount,
+            trs.create_time,
+            yu.nick_name
+        FROM topic_record_single trs
+        LEFT JOIN yk_user yu ON trs.user_id = yu.id
+        <where>
+            <if test="param.nickName != null and param.nickName != ''">
+                AND yu.nick_name LIKE CONCAT('%',#{param.nickName},'%')
+            </if>
+            <if test="param.topicTitle != null and param.topicTitle !=''">
+                AND trs.topic_title LIKE CONCAT('%',#{param.topicTitle},'%')
+            </if>
+        </where>
+        ORDER BY trs.id DESC
+    </select>
+
+</mapper>

@@ -30,7 +30,7 @@ import me.chanjar.weixin.common.error.WxErrorException;
 import me.chanjar.weixin.common.service.WxOAuth2Service;
 import me.chanjar.weixin.mp.api.WxMpService;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -51,7 +51,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Resource
     private WxMpService wxMpService;
     @Resource
-    private StringRedisTemplate stringRedisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
     @Resource
     private UserWalletMapper userWalletMapper;
     @Resource
@@ -66,15 +66,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = baseMapper.selectById(userId);
         if (user != null) {
             BeanUtils.copyProperties(user, userVo);
-            Long preNum = baseMapper.selectCount(new LambdaQueryWrapper<User>()
-                    .lt(User::getId, userId));
-            long indexNum = preNum + 1;
-            String userMulti = stringRedisTemplate.opsForValue().get(RedisKey.USER_MULTI);
-            if (userMulti != null) {
-                long multi = Long.parseLong(userMulti);
-                indexNum = indexNum * multi;
-            }
-            userVo.setIndexNum(indexNum);
         }
 
         return userVo;
@@ -108,7 +99,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             }
         }
 
-
         User checkData = baseMapper.selectOne(new LambdaQueryWrapper<User>()
                 .eq(User::getOpenId, openId));
         if (checkData == null) {
@@ -123,44 +113,49 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             baseMapper.insert(checkData);
             // 有邀请人则赠送邀请人积分
             if (StringUtils.hasLength(loginVo.getParentId())) {
-                InviteSet inviteSet = inviteSetMapper.selectOne(new LambdaQueryWrapper<InviteSet>().last("LIMIT 1"));
-                if (inviteSet != null && inviteSet.getRewardAmount().compareTo(BigDecimal.ZERO) > 0) {
-                    UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
-                            .eq(UserWallet::getUserId, loginVo.getParentId())
-                            .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
+                // 检查上级是否存在
+                User parent = baseMapper.selectById(loginVo.getParentId());
+                if (parent != null) {
+                    InviteSet inviteSet = inviteSetMapper.selectOne(new LambdaQueryWrapper<InviteSet>().last("LIMIT 1"));
+                    if (inviteSet != null && inviteSet.getRewardAmount().compareTo(BigDecimal.ZERO) > 0) {
+                        UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
+                                .eq(UserWallet::getUserId, loginVo.getParentId())
+                                .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
 
-                    UserWalletRecord walletRecord = new UserWalletRecord();
-                    walletRecord.setChangeAmount(inviteSet.getRewardAmount());
-                    walletRecord.setEventId(checkData.getId());
-                    walletRecord.setEventType(UserWalletEventEnum.INVITE_REWARD.getKey());
-                    if (userWallet != null) {
-                        // 检查奖励次数是否达上限
-                        Long checkCount = userWalletRecordMapper.selectCount(new LambdaQueryWrapper<UserWalletRecord>()
-                                .eq(UserWalletRecord::getWalletId, userWallet.getId())
-                                .eq(UserWalletRecord::getEventType, UserWalletEventEnum.INVITE_REWARD.getKey()));
-                        if (checkCount <= inviteSet.getRewardLimit()) {
-                            //执行奖励赠送
-                            BigDecimal afterAmount = userWallet.getAmount().add(inviteSet.getRewardAmount());
-                            int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()
-                                    .eq(UserWallet::getId, userWallet.getId())
-                                    .eq(UserWallet::getVersion, userWallet.getVersion())
-                                    .set(UserWallet::getAmount, afterAmount)
-                                    .set(UserWallet::getVersion, userWallet.getVersion() + 1));
-                            walletRecord.setStatus(updateRow > 0);
-                            walletRecord.setAfterAmount(afterAmount);
+                        UserWalletRecord walletRecord = new UserWalletRecord();
+                        walletRecord.setChangeAmount(inviteSet.getRewardAmount());
+                        walletRecord.setEventId(checkData.getId());
+                        walletRecord.setEventType(UserWalletEventEnum.INVITE_REWARD.getKey());
+                        if (userWallet != null) {
+                            // 检查奖励次数是否达上限
+                            Long checkCount = userWalletRecordMapper.selectCount(new LambdaQueryWrapper<UserWalletRecord>()
+                                    .eq(UserWalletRecord::getWalletId, userWallet.getId())
+                                    .eq(UserWalletRecord::getEventType, UserWalletEventEnum.INVITE_REWARD.getKey()));
+                            if (checkCount <= inviteSet.getRewardLimit()) {
+                                //执行奖励赠送
+                                BigDecimal afterAmount = userWallet.getAmount().add(inviteSet.getRewardAmount());
+                                int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()
+                                        .eq(UserWallet::getId, userWallet.getId())
+                                        .eq(UserWallet::getVersion, userWallet.getVersion())
+                                        .set(UserWallet::getAmount, afterAmount)
+                                        .set(UserWallet::getVersion, userWallet.getVersion() + 1));
+                                walletRecord.setStatus(updateRow > 0);
+                                walletRecord.setAfterAmount(afterAmount);
+                                walletRecord.setWalletId(userWallet.getId());
+                                userWalletRecordMapper.insert(walletRecord);
+                            }
+                        } else {
+                            userWallet = new UserWallet();
+                            userWallet.setUserId(loginVo.getParentId());
+                            userWallet.setType(UserWalletTypeEnum.INTEGRAL.getKey());
+                            userWallet.setAmount(inviteSet.getRewardAmount());
+                            userWallet.setVersion(0);
+                            int insertRow = userWalletMapper.insert(userWallet);
+                            walletRecord.setStatus(insertRow > 0);
+                            walletRecord.setAfterAmount(userWallet.getAmount());
                             walletRecord.setWalletId(userWallet.getId());
                             userWalletRecordMapper.insert(walletRecord);
                         }
-                    } else {
-                        userWallet = new UserWallet();
-                        userWallet.setUserId(loginVo.getParentId());
-                        userWallet.setType(UserWalletTypeEnum.INTEGRAL.getKey());
-                        userWallet.setAmount(inviteSet.getRewardAmount());
-                        int insertRow = userWalletMapper.insert(userWallet);
-                        walletRecord.setStatus(insertRow > 0);
-                        walletRecord.setAfterAmount(userWallet.getAmount());
-                        walletRecord.setWalletId(userWallet.getId());
-                        userWalletRecordMapper.insert(walletRecord);
                     }
                 }
             }
@@ -173,6 +168,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         resultMap.put("userInfo", checkData);
         resultMap.put("token", resultToken);
         return resultMap;
+    }
+
+    @Override
+    public void addViewNum() {
+        Integer viewNum = (Integer) redisTemplate.opsForValue().get(RedisKey.USER_VIEW_NUM);
+        if (viewNum == null) {
+            viewNum = 7654321;
+            redisTemplate.opsForValue().set(RedisKey.USER_VIEW_NUM, viewNum);
+        } else {
+            redisTemplate.opsForValue().increment(RedisKey.USER_VIEW_NUM);
+        }
+
+    }
+
+    @Override
+    public Integer getViewNum() {
+        Integer viewNum = (Integer) redisTemplate.opsForValue().get(RedisKey.USER_VIEW_NUM);
+        if (viewNum != null) {
+            return viewNum;
+        }
+        return 1;
     }
 
 }

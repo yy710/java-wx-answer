@@ -50,17 +50,10 @@ public class TopicLine implements Serializable {
     @TableField("user_num")
     private Integer userNum;
 
-    @Schema(description = "图片")
-    @TableField("pic")
-    private String pic;
+    @Schema(description = "描述")
+    @TableField("descr")
+    private String descr;
 
-    @Schema(description = "图片高度")
-    @TableField("height")
-    private Double height;
-
-    @Schema(description = "图片宽度")
-    @TableField("width")
-    private Double width;
     @Schema(description = "是否完成")
     @TableField(exist = false)
     private boolean doneFlag;

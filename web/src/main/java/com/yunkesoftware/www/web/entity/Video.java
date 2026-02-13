@@ -24,17 +24,13 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Accessors(chain = true)
-@TableName("ticket_video")
-@Schema(name = "TicketVideo对象", description = "视频信息")
-public class TicketVideo extends PageCurrency {
+@TableName("video")
+@Schema(name = "Video对象", description = "视频信息")
+public class Video extends PageCurrency {
 
     @Schema(description = "id")
     @TableId("id")
     private String id;
-
-    @Schema(description = "活动id")
-    @TableField("activity_id")
-    private String activityId;
 
     @Schema(description = "标题")
     @TableField("title")
@@ -72,7 +68,19 @@ public class TicketVideo extends PageCurrency {
     @TableField("reward_amount")
     private BigDecimal rewardAmount;
 
-    @Schema(description = "是否获得积分")
+    @Schema(description = "是否可获得积分")
+    @TableField("reward_flag")
+    private Boolean rewardFlag;
+
+    @Schema(description = "是否可投票")
+    @TableField("ticket_flag")
+    private Boolean ticketFlag;
+
+    @Schema(description = "是否已获得积分")
     @TableField(exist = false)
-    private boolean rewardFlag;
+    private boolean getFlag;
+
+    @Schema(description = "已投票数")
+    @TableField(exist = false)
+    private Long ticketNum;
 }

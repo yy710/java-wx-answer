@@ -11,6 +11,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -63,15 +64,15 @@ public class TopicActivity extends PageCurrency {
     @NotNull(message = "结束时间不能为空")
     private LocalDateTime endTime;
 
-    @Schema(description = "浏览次数")
-    @TableField("view_num")
-    @ExcelProperty("浏览次数")
-    private Integer viewNum;
-
     @Schema(description = "参与人数")
     @TableField("user_num")
     @ExcelProperty("参与人数")
     private Integer userNum;
+
+    @Schema(description = "全部点亮额外奖励积分数")
+    @TableField("reward_extra")
+    @ExcelProperty("全部点亮额外奖励积分数")
+    private BigDecimal rewardExtra;
 
     @Schema(description = "创建时间")
     @TableField(value = "create_time", fill = FieldFill.INSERT)

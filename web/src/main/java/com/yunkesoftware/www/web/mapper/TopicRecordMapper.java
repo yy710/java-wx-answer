@@ -22,5 +22,6 @@ public interface TopicRecordMapper extends BaseMapper<TopicRecord> {
 
     Integer countGtTotalRewardAmount(@Param("topicActivityId") String topicActivityId, @Param("userId") String userId, @Param("totalRewardAmount") BigDecimal totalRewardAmount);
 
-    int countUserTodayNum(@Param("userId") String userId, @Param("topicActivityId") String topicActivityId, @Param("dateParam") LocalDate dateParam);
+    int countUserTodayNum(@Param("userId") String userId, @Param("topicActivityId") String topicActivityId,
+                          @Param("dateParam") LocalDate dateParam, @Param("topicLineId") String topicLineId);
 }

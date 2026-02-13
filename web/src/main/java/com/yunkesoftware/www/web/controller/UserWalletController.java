@@ -38,4 +38,11 @@ public class UserWalletController {
         userWalletService.scanPay(query);
         return CommonResult.success();
     }
+
+    @Operation(summary = "检查最大金额")
+    @GetMapping("/checkMax")
+    public CommonResult<Boolean> checkMax() {
+        Boolean checkFlag = userWalletService.checkMax();
+        return CommonResult.success(checkFlag);
+    }
 }

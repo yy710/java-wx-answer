@@ -27,4 +27,11 @@ public class TopicController {
         List<Topic> resultList = topicService.listByQuery(topicLineId);
         return CommonResult.success(resultList);
     }
+
+    @Operation(summary = "获取随机题目(趣味答题已回答正确的进行过滤)")
+    @GetMapping("/listRandom")
+    public CommonResult<List<Topic>> listRandom() {
+        List<Topic> resultList = topicService.listRandom();
+        return CommonResult.success(resultList);
+    }
 }

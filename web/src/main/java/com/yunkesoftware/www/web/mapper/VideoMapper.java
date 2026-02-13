@@ -1,6 +1,6 @@
 package com.yunkesoftware.www.web.mapper;
 
-import com.yunkesoftware.www.web.entity.TicketVideo;
+import com.yunkesoftware.www.web.entity.Video;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
@@ -11,6 +11,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * @author yk
  * @since 2026-01-15
  */
-public interface TicketVideoMapper extends BaseMapper<TicketVideo> {
+public interface VideoMapper extends BaseMapper<Video> {
 
 }

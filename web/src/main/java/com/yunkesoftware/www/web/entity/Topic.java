@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -45,4 +44,9 @@ public class Topic implements Serializable {
     @Schema(description = "题目选项")
     @TableField(exist = false)
     private List<TopicItem> topicItemList;
+
+    @Schema(description = "1-首次答题 2-答错 3-答对")
+    @TableField(exist = false)
+    private Integer againType = 1;
+
 }

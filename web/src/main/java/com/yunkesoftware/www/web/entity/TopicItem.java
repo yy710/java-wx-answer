@@ -45,4 +45,8 @@ public class TopicItem implements Serializable {
     @Schema(description = "是否正确选项")
     @TableField("answer_flag")
     private Boolean answerFlag;
+
+    @Schema(description = "是否选中")
+    @TableField(exist = false)
+    private Boolean checkFlag;
 }

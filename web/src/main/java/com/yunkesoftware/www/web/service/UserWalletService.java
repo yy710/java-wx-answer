@@ -16,4 +16,5 @@ public interface UserWalletService extends IService<UserWallet> {
 
     void scanPay(ScanPayQuery query);
 
+    Boolean checkMax();
 }

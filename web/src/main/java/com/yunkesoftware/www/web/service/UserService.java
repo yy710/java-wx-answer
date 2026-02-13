@@ -24,4 +24,7 @@ public interface UserService extends IService<User> {
 
     Map<String, Object> wxAuth(LoginVo loginVo);
 
+    void addViewNum();
+
+    Integer getViewNum();
 }

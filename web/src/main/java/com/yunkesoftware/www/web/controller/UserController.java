@@ -32,4 +32,18 @@ public class UserController {
         return CommonResult.success();
     }
 
+    @Operation(summary = "增加浏览次数")
+    @GetMapping("/addViewNum")
+    public CommonResult<Object> addViewNum() {
+        userService.addViewNum();
+        return CommonResult.success();
+    }
+
+    @Operation(summary = "获取浏览次数")
+    @GetMapping("/getViewNum")
+    public CommonResult<Integer> getViewNum() {
+        Integer viewNum = userService.getViewNum();
+        return CommonResult.success(viewNum);
+    }
+
 }

@@ -1,9 +1,11 @@
 package com.yunkesoftware.www.web.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.yunkesoftware.www.query.PageCurrency;
 import com.yunkesoftware.www.result.CommonResult;
 import com.yunkesoftware.www.web.service.TopicRecordActivityService;
 import com.yunkesoftware.www.web.entity.TopicRecordActivity;
+import com.yunkesoftware.www.web.vo.WalletRankVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -24,9 +26,9 @@ public class TopicRecordActivityController {
 
     @Operation(summary = "排行榜")
     @PostMapping("/page")
-    public CommonResult<Page<TopicRecordActivity>> page(@RequestBody TopicRecordActivity topicRecordActivity) {
-
-        Page<TopicRecordActivity> pageResult = topicRecordActivityService.pageByQuery(topicRecordActivity);
+    public CommonResult<Page<WalletRankVo>> page(@RequestBody PageCurrency query) {
+//        Page<TopicRecordActivity> pageResult = topicRecordActivityService.pageByQuery(topicRecordActivity);
+        Page<WalletRankVo> pageResult = topicRecordActivityService.pageRank(query);
         return CommonResult.success(pageResult);
     }
 

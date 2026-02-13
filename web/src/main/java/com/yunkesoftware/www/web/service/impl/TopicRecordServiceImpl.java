@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * <p>
@@ -60,7 +61,7 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
     public void add(TopicRecordVo vo) {
         TopicLine topicLine = topicLineMapper.selectById(vo.getTopicLineId());
         if (topicLine == null || Boolean.FALSE.equals(topicLine.getStatus())) {
-            throw new YunKeException(ExceptionEnum.FAIL, "当前地址活动已关闭-请刷新页面重试");
+            throw new YunKeException(ExceptionEnum.FAIL, "当前地图活动已关闭-请刷新页面重试");
         }
         TopicActivity topicActivity = topicActivityMapper.selectById(topicLine.getTopicActivityId());
         LocalDateTime nowTime = LocalDateTime.now();
@@ -72,13 +73,15 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
         TopicRecord checkData = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
                 .eq(TopicRecord::getTopicActivityId, topicActivity.getId())
                 .eq(TopicRecord::getTopicLineId, topicLine.getId())
-                .eq(TopicRecord::getUserId, userId));
-        if (checkData != null) {
-            throw new YunKeException(ExceptionEnum.FAIL, "您已参与过当前答题活动");
+                .eq(TopicRecord::getUserId, userId)
+                .orderByDesc(TopicRecord::getId)
+                .last("LIMIT 1"));
+        if (checkData != null && Objects.equals(checkData.getRightNum(), checkData.getTotalNum())) {
+            throw new YunKeException(ExceptionEnum.FAIL, "当前地图答题奖励已全部获得");
         }
         // 每日可答题的数量限制
         if (topicActivity.getLimitNum() != null) {
-            int todayNum = baseMapper.countUserTodayNum(userId, topicActivity.getId(), LocalDate.now());
+            int todayNum = baseMapper.countUserTodayNum(userId, topicActivity.getId(), LocalDate.now(), vo.getTopicLineId());
             if (todayNum >= topicActivity.getLimitNum()) {
                 throw new YunKeException(ExceptionEnum.FAIL, "您今日打卡次数已达上限-请明天再来");
             }
@@ -86,7 +89,6 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
 
         BigDecimal rewardAmount = BigDecimal.ZERO;// 奖励积分数
         int rightNum = 0; // 答对的题目数
-
 
         TopicRecord topicRecord = new TopicRecord();
         topicRecord.setId(IdUtil.getSnowflakeNextIdStr());
@@ -101,6 +103,7 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
         List<TopicRecordTopicItem> recordTopicItemList = new ArrayList<>();
 
         for (TopicRecordTopicVo topicVo : vo.getTopicVoList()) {
+
             // 循环查询+判断选项答案是否正确
             TopicLineTopic topicLineTopic = topicLineTopicMapper.selectOne(new LambdaQueryWrapper<TopicLineTopic>()
                     .eq(TopicLineTopic::getTopicId, topicVo.getId())
@@ -116,6 +119,7 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
             topicRecordTopic.setTopicTitle(topic.getTitle());
             topicRecordTopic.setTopicRecordId(topicRecord.getId());
             topicRecordTopic.setRewardAmount(topicLineTopic.getRewardAmount());
+
             boolean answerFlag = false;
             // 判断用户选项是否正确
             for (TopicRecordTopicItemVo topicItemVo : topicVo.getRecordTopicItemVoList()) {
@@ -133,18 +137,20 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
                 if (Boolean.TRUE.equals(topicItemVo.getCheckFlag())
                         && Boolean.TRUE.equals(checkItem.getAnswerFlag())) {
                     rightNum++;
-                    rewardAmount = rewardAmount.add(topicLineTopic.getRewardAmount());
                     answerFlag = true;
+                    if (topicVo.getAgainType() < 3) { //第一次答题或者前面全部打错
+                        rewardAmount = rewardAmount.add(topicLineTopic.getRewardAmount());
+                    }
                 }
                 recordTopicItemList.add(recordTopicItem);
             }
             topicRecordTopic.setAnswerFlag(answerFlag);
-
             recordTopicList.add(topicRecordTopic);
         }
 
         topicRecord.setRewardAmount(rewardAmount);
         topicRecord.setRightNum(rightNum);
+        topicRecord.setTotalNum(vo.getTopicVoList().size());
 
         baseMapper.insert(topicRecord);
         topicRecordTopicMapper.insertBatch(recordTopicList);
@@ -201,28 +207,27 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
 
     }
 
-    @Override
-    public TopicRecord getOneByTopicLineId(String topicLineId) {
-        String userId = StpUtil.getLoginIdAsString();
-        TopicRecord topicRecord = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
-                .eq(TopicRecord::getTopicLineId, topicLineId)
-                .eq(TopicRecord::getUserId, userId));
-        if (topicRecord != null) {
-            TopicRecordActivity recordActivity = topicRecordActivityMapper.selectOne(new LambdaQueryWrapper<TopicRecordActivity>()
-                    .eq(TopicRecordActivity::getTopicActivityId, topicRecord.getTopicActivityId())
-                    .eq(TopicRecordActivity::getUserId, userId));
-            if (recordActivity != null) {
-                // 查询排名
-                Long preNum = topicRecordActivityMapper.selectCount(new LambdaQueryWrapper<TopicRecordActivity>()
-                        .eq(TopicRecordActivity::getTopicActivityId, topicRecord.getTopicActivityId())
-                        .ne(TopicRecordActivity::getUserId, userId)
-                        .ge(TopicRecordActivity::getTotalRewardAmount, recordActivity.getTotalRewardAmount()));
-                topicRecord.setTotalRewardAmount(recordActivity.getTotalRewardAmount());
-                topicRecord.setRankNum(preNum + 1);
-            }
-        }
-        return topicRecord;
-    }
-
+//    @Override
+//    public TopicRecord getOneByTopicLineId(String topicLineId) {
+//        String userId = StpUtil.getLoginIdAsString();
+//        TopicRecord topicRecord = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
+//                .eq(TopicRecord::getTopicLineId, topicLineId)
+//                .eq(TopicRecord::getUserId, userId));
+//        if (topicRecord != null) {
+//            TopicRecordActivity recordActivity = topicRecordActivityMapper.selectOne(new LambdaQueryWrapper<TopicRecordActivity>()
+//                    .eq(TopicRecordActivity::getTopicActivityId, topicRecord.getTopicActivityId())
+//                    .eq(TopicRecordActivity::getUserId, userId));
+//            if (recordActivity != null) {
+//                // 查询排名
+//                Long preNum = topicRecordActivityMapper.selectCount(new LambdaQueryWrapper<TopicRecordActivity>()
+//                        .eq(TopicRecordActivity::getTopicActivityId, topicRecord.getTopicActivityId())
+//                        .ne(TopicRecordActivity::getUserId, userId)
+//                        .ge(TopicRecordActivity::getTotalRewardAmount, recordActivity.getTotalRewardAmount()));
+//                topicRecord.setTotalRewardAmount(recordActivity.getTotalRewardAmount());
+//                topicRecord.setRankNum(preNum + 1);
+//            }
+//        }
+//        return topicRecord;
+//    }
 
 }

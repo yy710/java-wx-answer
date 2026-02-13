@@ -75,10 +75,8 @@ public class TicketActivityServiceImpl extends ServiceImpl<TicketActivityMapper,
     }
 
     @Override
-    public Integer surplusTicket(String id) {
-        TicketActivity ticketActivity = baseMapper.selectOne(new LambdaQueryWrapper<TicketActivity>()
-                .eq(TicketActivity::getId, id)
-                .select(TicketActivity::getTicketLimit, TicketActivity::getId));
+    public Integer surplusTicket() {
+        TicketActivity ticketActivity = (TicketActivity) redisTemplate.opsForValue().get(RedisKey.TICKET_ACTIVITY);
         if (ticketActivity != null) {
             Long myTicketNum = ticketRecordMapper.selectCount(new LambdaQueryWrapper<TicketRecord>()
                     .eq(TicketRecord::getTicketActivityId, ticketActivity.getId())

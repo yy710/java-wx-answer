@@ -16,6 +16,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +39,7 @@ public class TopicLineServiceImpl extends ServiceImpl<TopicLineMapper, TopicLine
     @Resource
     private TopicRecordMapper topicRecordMapper;
 
+
     @Override
     public List<TopicLine> listByQuery() {
         String userId = StpUtil.getLoginIdAsString();
@@ -50,17 +52,13 @@ public class TopicLineServiceImpl extends ServiceImpl<TopicLineMapper, TopicLine
             topicActivity = topicActivityMapper.selectOne(new LambdaQueryWrapper<TopicActivity>()
                     .le(TopicActivity::getStartTime, nowTime)
                     .gt(TopicActivity::getEndTime, nowTime)
-                    .select(TopicActivity::getId, TopicActivity::getViewNum, TopicActivity::getEndTime));
+                    .select(TopicActivity::getId, TopicActivity::getEndTime, TopicActivity::getLimitNum));
             if (topicActivity == null) {
                 return new ArrayList<>();
             }
             long seconds = Duration.between(nowTime, topicActivity.getEndTime()).getSeconds();
             redisTemplate.opsForValue().set(RedisKey.TOPIC_ACTIVITY, topicActivity, seconds, TimeUnit.SECONDS);
         }
-
-        topicActivity.setViewNum(topicActivity.getViewNum() + 1);
-        topicActivityMapper.updateById(topicActivity);
-
 
         List<TopicLine> topicLineList = (List<TopicLine>) redisTemplate.opsForValue().get(RedisKey.TOPIC_LINE_KEY + topicActivity.getId());
         if (topicLineList == null) {
@@ -73,16 +71,28 @@ public class TopicLineServiceImpl extends ServiceImpl<TopicLineMapper, TopicLine
             redisTemplate.opsForValue().set(RedisKey.TOPIC_LINE_KEY + topicActivity.getId(), topicLineList, seconds, TimeUnit.SECONDS);
         }
 
-
         for (TopicLine topicLine : topicLineList) {
             TopicRecord checkData = topicRecordMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
                     .eq(TopicRecord::getTopicLineId, topicLine.getId())
-                    .eq(TopicRecord::getTopicActivityId, topicActivity.getId())
                     .eq(TopicRecord::getUserId, userId)
-                    .select(TopicRecord::getId, TopicRecord::getTopicActivityId, TopicRecord::getTopicLineId)
+                    .select(TopicRecord::getId, TopicRecord::getTopicActivityId, TopicRecord::getRightNum)
                     .last("LIMIT 1"));
-            topicLine.setDoneFlag(checkData != null);
+            topicLine.setDoneFlag(checkData != null && checkData.getRightNum() > 0);
         }
         return topicLineList;
+    }
+
+    @Override
+    public Boolean checkContinue(String id) {
+        String userId = StpUtil.getLoginIdAsString();
+        TopicActivity topicActivity = (TopicActivity) redisTemplate.opsForValue().get(RedisKey.TOPIC_ACTIVITY);
+        if (topicActivity == null) {
+            return false;
+        }
+        if (topicActivity.getLimitNum() != null) {
+            int todayNum = topicRecordMapper.countUserTodayNum(userId, topicActivity.getId(), LocalDate.now(),id);
+            return todayNum < topicActivity.getLimitNum();
+        }
+        return true;
     }
 }

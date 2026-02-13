@@ -78,6 +78,10 @@ public class TopicRecord extends PageCurrency {
     @ExcelProperty("答对题目数")
     private Integer rightNum;
 
+    @Schema(description = "题目总数")
+    @TableField("total_num")
+    private Integer totalNum;
+
     @Schema(description = "创建时间")
     @TableField("create_time")
     @ExcelProperty("创建时间")

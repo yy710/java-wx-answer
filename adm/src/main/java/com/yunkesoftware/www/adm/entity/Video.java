@@ -15,7 +15,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -31,20 +30,14 @@ import lombok.experimental.Accessors;
 @Getter
 @Setter
 @Accessors(chain = true)
-@TableName("ticket_video")
-@Schema(name = "TicketVideo对象", description = "视频信息")
-public class TicketVideo extends PageCurrency {
+@TableName("video")
+@Schema(name = "Video对象", description = "视频信息")
+public class Video extends PageCurrency {
 
     @Schema(description = "id")
     @TableId("id")
     @ExcelIgnore
     private String id;
-
-    @Schema(description = "活动id")
-    @TableField("activity_id")
-    @ExcelIgnore
-    @NotBlank(message = "关联活动不能为空")
-    private String activityId;
 
     @Schema(description = "标题")
     @TableField("title")
@@ -76,10 +69,20 @@ public class TicketVideo extends PageCurrency {
     @ExcelProperty("排序")
     private Integer seq;
 
+    @Schema(description = "是否开启投票")
+    @TableField("ticket_flag")
+    @ExcelProperty("是否开启投票")
+    private Boolean ticketFlag;
+
     @Schema(description = "票数")
     @TableField("ticket_total")
     @ExcelProperty("票数")
     private Integer ticketTotal;
+
+    @Schema(description = "是否奖励积分")
+    @TableField("reward_flag")
+    @ExcelProperty("是否奖励积分")
+    private Boolean rewardFlag;
 
     @Schema(description = "最小观看时长")
     @TableField("min_time")

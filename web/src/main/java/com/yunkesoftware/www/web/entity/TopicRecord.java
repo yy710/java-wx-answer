@@ -70,6 +70,10 @@ public class TopicRecord {
     @TableField("right_num")
     private Integer rightNum;
 
+    @Schema(description = "题目总数")
+    @TableField("total_num")
+    private Integer totalNum;
+
     @Schema(description = "创建时间")
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @JsonFormat(pattern = LocalDateUtils.PATTERN_YYYYMMDDHHMMSS)

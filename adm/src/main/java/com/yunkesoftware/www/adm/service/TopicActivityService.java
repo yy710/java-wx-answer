@@ -3,6 +3,8 @@ package com.yunkesoftware.www.adm.service;
 import com.yunkesoftware.www.adm.entity.TopicActivity;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
+
 /**
  * <p>
  * 答题活动 服务类
@@ -14,4 +16,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface TopicActivityService extends IService<TopicActivity> {
 
     void addOrModify(TopicActivity topicActivity);
+
+    void delete(List<String> ids);
 }

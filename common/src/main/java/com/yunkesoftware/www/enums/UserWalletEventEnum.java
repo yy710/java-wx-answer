@@ -11,7 +11,8 @@ public enum UserWalletEventEnum {
     SCAN_PAY(3, "扫码支付"),
     DAILY_SIGN(4, "日常签到"),
     INVITE_REWARD(5, "邀请新人"),
-    VIDEO(6, "视频奖励")
+    VIDEO(6, "视频奖励"),
+    SINGLE_TOPIC_REWARD(7, "趣味答题")
     ;
 
     private final int key;

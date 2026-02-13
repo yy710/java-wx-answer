@@ -1,6 +1,6 @@
 package com.yunkesoftware.www.adm.service;
 
-import com.yunkesoftware.www.adm.entity.TicketVideo;
+import com.yunkesoftware.www.adm.entity.Video;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
@@ -11,6 +11,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @author yk
  * @since 2026-01-14
  */
-public interface TicketVideoService extends IService<TicketVideo> {
+public interface VideoService extends IService<Video> {
 
+    void addOrModify(Video ticketVideo);
 }

@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -48,9 +49,9 @@ public class TopicActivity implements Serializable {
     @JsonFormat(pattern = LocalDateUtils.PATTERN_YYYYMMDDHHMMSS)
     private LocalDateTime endTime;
 
-    @Schema(description = "浏览次数")
-    @TableField("view_num")
-    private Integer viewNum;
+    @Schema(description = "全部点亮额外奖励积分数")
+    @TableField("reward_extra")
+    private BigDecimal rewardExtra;
 
     @Schema(description = "参与人数")
     @TableField("user_num")

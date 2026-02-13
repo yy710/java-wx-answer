@@ -32,9 +32,8 @@ public class TopicRecordController {
     @Operation(summary = "查询答题记录")
     @GetMapping("/getOneByTopicLineId")
     public CommonResult<TopicRecord> getOneByTopicLineId(@RequestParam(value = "topicLineId") String topicLineId) {
-        TopicRecord topicRecord = topicRecordService.getOneByTopicLineId(topicLineId);
-        return CommonResult.success(topicRecord);
+//        TopicRecord topicRecord = topicRecordService.getOneByTopicLineId(topicLineId);
+        return CommonResult.success(null);
     }
-
 
 }

@@ -30,12 +30,12 @@ public class UserMultiController {
         Page<UserMultiVo> pageParam = new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
 
         List<UserMultiVo> resultList = new ArrayList<>();
-        String userMulti = stringRedisTemplate.opsForValue().get(RedisKey.USER_MULTI);
-        if (userMulti != null) {
-            UserMultiVo userMultiVo = new UserMultiVo();
-            userMultiVo.setUserMultiple(Integer.parseInt(userMulti));
-            resultList.add(userMultiVo);
-        }
+//        String userMulti = stringRedisTemplate.opsForValue().get(RedisKey.USER_MULTI);
+//        if (userMulti != null) {
+//            UserMultiVo userMultiVo = new UserMultiVo();
+//            userMultiVo.setUserMultiple(Integer.parseInt(userMulti));
+//            resultList.add(userMultiVo);
+//        }
         pageParam.setRecords(resultList);
         return CommonResult.success(pageParam);
     }

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * <p>
@@ -48,15 +49,19 @@ public class TopicActivityServiceImpl extends ServiceImpl<TopicActivityMapper, T
             throw new YunKeException(ExceptionEnum.FAIL, "时间与(" + checkData.getTitle() + ")时间重叠");
         }
         if (StringUtils.hasLength(topicActivity.getId())) {
-            topicActivity.setViewNum(null);
             topicActivity.setUserNum(null);
             topicActivity.setCreateTime(null);
             baseMapper.updateById(topicActivity);
             redisTemplate.delete(RedisKey.TOPIC_DATA_KEY + topicActivity.getId());
         } else {
-            topicActivity.setViewNum(0);
             topicActivity.setUserNum(0);
             baseMapper.insert(topicActivity);
         }
+        redisTemplate.delete(RedisKey.TOPIC_ACTIVITY);
+    }
+
+    @Override
+    public void delete(List<String> ids) {
+        redisTemplate.delete(RedisKey.TOPIC_ACTIVITY);
     }
 }

@@ -4,7 +4,7 @@ spring:
       max-request-size: 50MB
       max-file-size: 50MB
   profiles:
-    active: dev
+    active: prod
 logging:
   level:
     root: info

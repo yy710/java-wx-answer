@@ -40,8 +40,8 @@ public class TicketActivityController {
 
     @Operation(summary = "获取用户剩余票数")
     @GetMapping("/surplusTicket")
-    public CommonResult<Integer> surplusTicket(@RequestParam(value = "activityId") String activityId) {
-        Integer ticket = ticketActivityService.surplusTicket(activityId);
+    public CommonResult<Integer> surplusTicket() {
+        Integer ticket = ticketActivityService.surplusTicket();
         return CommonResult.success(ticket);
     }
 }

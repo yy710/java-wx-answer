@@ -15,5 +15,5 @@ public interface TicketActivityService extends IService<TicketActivity> {
 
     TicketActivity getOpen();
 
-    Integer surplusTicket(String id);
+    Integer surplusTicket();
 }

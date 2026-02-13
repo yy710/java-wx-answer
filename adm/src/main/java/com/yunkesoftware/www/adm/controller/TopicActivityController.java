@@ -52,6 +52,7 @@ public class TopicActivityController {
     @Operation(summary = "通过Id批量删除")
     @DeleteMapping("/delete")
     public CommonResult<Boolean> delete(@RequestBody List<String> ids) {
-        return CommonResult.status(topicActivityService.removeByIds(ids));
+        topicActivityService.delete(ids);
+        return CommonResult.success();
     }
 }

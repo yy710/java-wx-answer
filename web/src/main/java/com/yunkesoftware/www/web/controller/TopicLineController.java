@@ -27,4 +27,11 @@ public class TopicLineController {
         List<TopicLine> resultList = topicLineService.listByQuery();
         return CommonResult.success(resultList);
     }
+
+    @Operation(summary = "检查是否可答题")
+    @GetMapping("/checkContinue")
+    public CommonResult<Boolean> checkContinue(String id) {
+        Boolean checkFlag = topicLineService.checkContinue(id);
+        return CommonResult.success(checkFlag);
+    }
 }

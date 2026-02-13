@@ -3,7 +3,7 @@ package com.yunkesoftware.www.web.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.yunkesoftware.www.WebApplication;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yunkesoftware.www.enums.UserWalletEventEnum;
 import com.yunkesoftware.www.enums.UserWalletTypeEnum;
 import com.yunkesoftware.www.exception.ExceptionEnum;
@@ -16,12 +16,10 @@ import com.yunkesoftware.www.web.mapper.UserWalletMapper;
 import com.yunkesoftware.www.web.mapper.UserWalletRecordMapper;
 import com.yunkesoftware.www.web.query.ScanPayQuery;
 import com.yunkesoftware.www.web.service.UserWalletService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 /**
  * <p>
@@ -68,6 +66,14 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         walletRecord.setAfterAmount(afterAmount);
         walletRecord.setEventType(UserWalletEventEnum.SCAN_PAY.getKey());
         userWalletRecordMapper.insert(walletRecord);
+    }
+
+    @Override
+    public Boolean checkMax() {
+        UserWallet userWallet = baseMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
+                .eq(UserWallet::getUserId, StpUtil.getLoginIdAsString())
+                .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
+        return userWallet != null && userWallet.getAmount().compareTo(BigDecimal.valueOf(4000)) > -1;
     }
 
 

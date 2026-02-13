@@ -22,7 +22,7 @@
     </sql>
     <select id="pageByQuery" resultType="com.yunkesoftware.www.adm.entity.TopicRecord">
         SELECT
-        tr.id,tr.topic_activity_title,tr.topic_line_title,tr.reward_amount,tr.used_time,tr.right_num,
+        tr.id,tr.topic_activity_title,tr.topic_line_title,tr.reward_amount,tr.used_time,tr.right_num,tr.total_num,
         tr.create_time,yu.nick_name
         FROM topic_record tr
         LEFT JOIN yk_user yu ON yu.id = tr.user_id

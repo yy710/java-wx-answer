@@ -31,6 +31,7 @@
         WHERE topic_activity_id = #{topicActivityId}
           AND user_id = #{userId}
           AND DATE_FORMAT(create_time, '%Y-%m-%d') = #{dateParam}
+        AND topic_line_id != #{topicLineId}
     </select>
 
 </mapper>

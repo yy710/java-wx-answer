@@ -21,9 +21,6 @@ public class UserVo implements Serializable {
     @Schema(description = "头像")
     private String pic;
 
-    @Schema(description = "第几位访问者")
-    private long indexNum;
-
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
 }

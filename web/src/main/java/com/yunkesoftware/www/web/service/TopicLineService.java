@@ -16,4 +16,6 @@ import java.util.List;
 public interface TopicLineService extends IService<TopicLine> {
 
     List<TopicLine> listByQuery();
+
+    Boolean checkContinue(String id);
 }

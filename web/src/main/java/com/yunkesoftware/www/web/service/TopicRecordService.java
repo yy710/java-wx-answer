@@ -2,6 +2,7 @@ package com.yunkesoftware.www.web.service;
 
 import com.yunkesoftware.www.web.entity.TopicRecord;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.yunkesoftware.www.web.vo.TopicRecordTopicVo;
 import com.yunkesoftware.www.web.vo.TopicRecordVo;
 
 /**
@@ -16,5 +17,6 @@ public interface TopicRecordService extends IService<TopicRecord> {
 
     void add(TopicRecordVo vo);
 
-    TopicRecord getOneByTopicLineId(String topicLineId);
+//    TopicRecord getOneByTopicLineId(String topicLineId);
+
 }

@@ -12,11 +12,11 @@ import java.util.Map;
  * MybatisPlus代码生成器
  */
 public class SQLGenerator {
-    private static final String packageName = "com.yunkesoftware.www.web"; // 文件路径
-    private static final String property = "D:\\code\\city-walk-java\\web\\";
-    private static final Map<String, Object> urli = Collections.singletonMap("urli", "wx");
+    private static final String packageName = "com.yunkesoftware.www.adm"; // 文件路径
+    private static final String property = "D:\\code\\city-walk-java\\adm\\";
+    private static final Map<String, Object> urli = Collections.singletonMap("urli", "sys");
     // 表名多个用逗号分隔
-    public static String[] table = {"category"};
+    public static String[] table = {"topic_record_single","topic_record_single_item"};
     // 作者
     private static final String authorName = "yk";
     // table前缀

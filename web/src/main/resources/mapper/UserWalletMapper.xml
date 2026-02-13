@@ -4,16 +4,24 @@
 
     <!-- 通用查询映射结果 -->
     <resultMap id="BaseResultMap" type="com.yunkesoftware.www.web.entity.UserWallet">
-        <id column="id" property="id" />
-        <result column="user_id" property="userId" />
-        <result column="type" property="type" />
-        <result column="amount" property="amount" />
-        <result column="version" property="version" />
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="type" property="type"/>
+        <result column="amount" property="amount"/>
+        <result column="version" property="version"/>
     </resultMap>
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id, user_id, type, amount, version
+        id
+        , user_id, type, amount, version
     </sql>
+    <select id="pageRank" resultType="com.yunkesoftware.www.web.vo.WalletRankVo">
+        SELECT uw.amount AS totalRewardAmount,
+            yu.nick_name
+        FROM user_wallet uw
+                 LEFT JOIN yk_user yu ON uw.user_id = yu.id
+        ORDER BY uw.amount DESC
+    </select>
 
 </mapper>

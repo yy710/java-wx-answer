@@ -16,4 +16,6 @@ import java.util.List;
 public interface TopicService extends IService<Topic> {
 
     List<Topic> listByQuery(String topicLineId);
+
+    List<Topic> listRandom();
 }
