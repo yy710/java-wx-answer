@@ -8,6 +8,7 @@ import com.yunkesoftware.www.enums.UserWalletEventEnum;
 import com.yunkesoftware.www.enums.UserWalletTypeEnum;
 import com.yunkesoftware.www.web.entity.*;
 import com.yunkesoftware.www.web.mapper.*;
+import com.yunkesoftware.www.web.service.TimeLimitService;
 import com.yunkesoftware.www.web.service.TopicRecordSingleService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
@@ -35,6 +36,8 @@ public class TopicRecordSingleServiceImpl extends ServiceImpl<TopicRecordSingleM
     private UserWalletMapper userWalletMapper;
     @Resource
     private UserWalletRecordMapper userWalletRecordMapper;
+    @Resource
+    private TimeLimitService timeLimitService;
 
     @Override
     public void add(TopicRecordSingle recordSingle) {
@@ -76,6 +79,8 @@ public class TopicRecordSingleServiceImpl extends ServiceImpl<TopicRecordSingleM
         topicRecordSingleItemMapper.insertBatch(recordSingle.getRecordSingleItemList());
 
         if (recordSingle.getRightFlag() && topic.getRewardAmount().compareTo(BigDecimal.ZERO) > 0) {
+            // 检查时间限制
+            timeLimitService.checkTimeLimit();
             UserWalletRecord walletRecord = new UserWalletRecord();
             walletRecord.setEventId(id);
             walletRecord.setEventType(UserWalletEventEnum.SINGLE_TOPIC_REWARD.getKey());
@@ -104,7 +109,6 @@ public class TopicRecordSingleServiceImpl extends ServiceImpl<TopicRecordSingleM
             }
             walletRecord.setWalletId(userWallet.getId());
             userWalletRecordMapper.insert(walletRecord);
-
         }
     }
 }

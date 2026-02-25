@@ -21,20 +21,22 @@
     </sql>
     <select id="pageByQuery" resultType="com.yunkesoftware.www.adm.entity.RiskWarning">
         SELECT
-            rw.id,
-            rw.title,
-            rw.reward_amount,
-            rw.category_id,
-            rw.status,
-            rw.seq,
-            rw.view_num,
-            rw.descr,
-            c.title AS categoryTitle
+        rw.id,
+        rw.title,
+        rw.reward_amount,
+        rw.category_id,
+        rw.status,
+        rw.seq,
+        rw.view_num,
+        rw.descr,
+        c.title AS categoryTitle
         FROM risk_warning rw
         LEFT JOIN category c ON rw.category_id = c.id
-        <if test="param.title != null and param.title != ''">
-            AND rw.title LIKE CONCAT('%',#{param.title},'%')
-        </if>
+        <where>
+            <if test="param.title != null and param.title != ''">
+                AND rw.title LIKE CONCAT('%',#{param.title},'%')
+            </if>
+        </where>
         ORDER BY rw.seq ASC
     </select>
 

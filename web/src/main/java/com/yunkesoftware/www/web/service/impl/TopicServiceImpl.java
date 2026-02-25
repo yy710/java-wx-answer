@@ -111,7 +111,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             topicAllList = dataList;
         }
         // 随机抽取20道题目
-        int total = Math.min(topicAllList.size(), 3);
+        int total = Math.min(topicAllList.size(), 10);
         List<Topic> changeList = new ArrayList<>(topicAllList);
         Collections.shuffle(changeList, new Random());//打乱顺序
         List<Topic> resultList = changeList.subList(0, total);

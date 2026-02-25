@@ -13,14 +13,13 @@
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id
-        , user_id, type, amount, version
+        id , user_id, type, amount, version
     </sql>
     <select id="pageRank" resultType="com.yunkesoftware.www.web.vo.WalletRankVo">
         SELECT uw.amount AS totalRewardAmount,
             yu.nick_name
         FROM user_wallet uw
-                 LEFT JOIN yk_user yu ON uw.user_id = yu.id
+        LEFT JOIN yk_user yu ON uw.user_id = yu.id
         ORDER BY uw.amount DESC
     </select>
 

@@ -16,5 +16,8 @@
     <sql id="Base_Column_List">
         id, user_id, ticket_activity_id, ticket_video_id, ip_addr, create_time
     </sql>
+    <select id="countUser" resultType="java.lang.Long">
+        SELECT COUNT(user_id) FROM ticket_record WHERE ticket_activity_id = #{activityId}
+    </select>
 
 </mapper>

@@ -36,7 +36,8 @@ public class TopicLineController {
         return CommonResult.success(topicLineService.page(new Page<>(topicLine.getPageNum(), topicLine.getPageSize()),
                 new LambdaQueryWrapper<TopicLine>()
                         .eq(TopicLine::getTopicActivityId, topicLine.getTopicActivityId())
-                        .like(StringUtils.hasLength(topicLine.getTitle()), TopicLine::getTitle, topicLine.getTitle())));
+                        .like(StringUtils.hasLength(topicLine.getTitle()), TopicLine::getTitle, topicLine.getTitle())
+                        .orderByAsc(TopicLine::getSeq)));
     }
 
     @Operation(summary = "根据Id查询")

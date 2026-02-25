@@ -5,8 +5,11 @@ import com.yunkesoftware.www.adm.entity.VideoActivity;
 import com.yunkesoftware.www.adm.mapper.VideoActivityMapper;
 import com.yunkesoftware.www.adm.service.VideoActivityService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.yunkesoftware.www.constant.RedisKey;
 import com.yunkesoftware.www.exception.ExceptionEnum;
 import com.yunkesoftware.www.exception.YunKeException;
+import jakarta.annotation.Resource;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -23,6 +26,8 @@ import java.util.List;
  */
 @Service
 public class VideoActivityServiceImpl extends ServiceImpl<VideoActivityMapper, VideoActivity> implements VideoActivityService {
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public void addOrModify(VideoActivity videoActivity) {
@@ -49,10 +54,12 @@ public class VideoActivityServiceImpl extends ServiceImpl<VideoActivityMapper, V
         } else {
             baseMapper.insert(videoActivity);
         }
+        redisTemplate.delete(RedisKey.VIDEO_ACTIVITY);
     }
 
     @Override
     public void delete(List<String> ids) {
         baseMapper.deleteByIds(ids);
+        redisTemplate.delete(RedisKey.VIDEO_ACTIVITY);
     }
 }

@@ -3,12 +3,14 @@ package com.yunkesoftware.www.web.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.yunkesoftware.www.constant.RedisKey;
+import com.yunkesoftware.www.enums.UserWalletTypeEnum;
 import com.yunkesoftware.www.web.entity.TopicActivity;
 import com.yunkesoftware.www.web.entity.TopicLine;
-import com.yunkesoftware.www.web.entity.TopicRecord;
+import com.yunkesoftware.www.web.entity.UserWallet;
 import com.yunkesoftware.www.web.mapper.TopicActivityMapper;
 import com.yunkesoftware.www.web.mapper.TopicLineMapper;
 import com.yunkesoftware.www.web.mapper.TopicRecordMapper;
+import com.yunkesoftware.www.web.mapper.UserWalletMapper;
 import com.yunkesoftware.www.web.service.TopicLineService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
@@ -38,6 +40,8 @@ public class TopicLineServiceImpl extends ServiceImpl<TopicLineMapper, TopicLine
     private RedisTemplate<String, Object> redisTemplate;
     @Resource
     private TopicRecordMapper topicRecordMapper;
+    @Resource
+    private UserWalletMapper userWalletMapper;
 
 
     @Override
@@ -71,13 +75,18 @@ public class TopicLineServiceImpl extends ServiceImpl<TopicLineMapper, TopicLine
             redisTemplate.opsForValue().set(RedisKey.TOPIC_LINE_KEY + topicActivity.getId(), topicLineList, seconds, TimeUnit.SECONDS);
         }
 
-        for (TopicLine topicLine : topicLineList) {
-            TopicRecord checkData = topicRecordMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
-                    .eq(TopicRecord::getTopicLineId, topicLine.getId())
-                    .eq(TopicRecord::getUserId, userId)
-                    .select(TopicRecord::getId, TopicRecord::getTopicActivityId, TopicRecord::getRightNum)
-                    .last("LIMIT 1"));
-            topicLine.setDoneFlag(checkData != null && checkData.getRightNum() > 0);
+        // 50积分点亮一个站点
+        UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
+                .eq(UserWallet::getUserId, userId)
+                .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
+        int i = 0;
+        if (userWallet != null) {
+            i = userWallet.getAmount().intValue() / 50;
+        }
+        if (i > 0) {
+            for (TopicLine topicLine : topicLineList) {
+                topicLine.setDoneFlag(topicLine.getLightSeq() < i);
+            }
         }
         return topicLineList;
     }
@@ -90,7 +99,7 @@ public class TopicLineServiceImpl extends ServiceImpl<TopicLineMapper, TopicLine
             return false;
         }
         if (topicActivity.getLimitNum() != null) {
-            int todayNum = topicRecordMapper.countUserTodayNum(userId, topicActivity.getId(), LocalDate.now(),id);
+            int todayNum = topicRecordMapper.countUserTodayNum(userId, topicActivity.getId(), LocalDate.now(), id);
             return todayNum < topicActivity.getLimitNum();
         }
         return true;

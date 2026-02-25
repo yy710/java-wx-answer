@@ -14,6 +14,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
@@ -34,10 +35,7 @@ public class TicketActivityServiceImpl extends ServiceImpl<TicketActivityMapper,
 
     @Override
     public TicketActivity getOpen() {
-
-
         TicketActivity ticketActivity = (TicketActivity) redisTemplate.opsForValue().get(RedisKey.TICKET_ACTIVITY);
-
         if (ticketActivity == null) {
             LocalDateTime nowTime = LocalDateTime.now();
             ticketActivity = baseMapper.selectOne(new LambdaQueryWrapper<TicketActivity>()
@@ -80,6 +78,7 @@ public class TicketActivityServiceImpl extends ServiceImpl<TicketActivityMapper,
         if (ticketActivity != null) {
             Long myTicketNum = ticketRecordMapper.selectCount(new LambdaQueryWrapper<TicketRecord>()
                     .eq(TicketRecord::getTicketActivityId, ticketActivity.getId())
+                    .like(TicketRecord::getCreateTime, LocalDate.now())
                     .eq(TicketRecord::getUserId, StpUtil.getLoginIdAsString()));
             return ticketActivity.getTicketLimit() - myTicketNum.intValue();
         }

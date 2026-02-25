@@ -46,6 +46,11 @@ public class TopicLine extends PageCurrency {
     @ExcelProperty("排序")
     private Integer seq;
 
+    @Schema(description = "亮线排序")
+    @TableField("light_seq")
+    @ExcelProperty("亮线排序")
+    private Integer lightSeq;
+
     @Schema(description = "是否开启")
     @TableField("status")
     @ExcelProperty("是否开启")

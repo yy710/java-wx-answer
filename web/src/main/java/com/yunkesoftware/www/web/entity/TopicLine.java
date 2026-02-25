@@ -42,6 +42,10 @@ public class TopicLine implements Serializable {
     @TableField("seq")
     private Integer seq;
 
+    @Schema(description = "亮线排序")
+    @TableField("light_seq")
+    private Integer lightSeq;
+
     @Schema(description = "是否开启")
     @TableField("status")
     private Boolean status;

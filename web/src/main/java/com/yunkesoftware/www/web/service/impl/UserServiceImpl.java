@@ -159,7 +159,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     }
                 }
             }
-
         }
         StpUtil.login(checkData.getId());
 
@@ -174,7 +173,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void addViewNum() {
         Integer viewNum = (Integer) redisTemplate.opsForValue().get(RedisKey.USER_VIEW_NUM);
         if (viewNum == null) {
-            viewNum = 7654321;
+            viewNum = 71940;
             redisTemplate.opsForValue().set(RedisKey.USER_VIEW_NUM, viewNum);
         } else {
             redisTemplate.opsForValue().increment(RedisKey.USER_VIEW_NUM);

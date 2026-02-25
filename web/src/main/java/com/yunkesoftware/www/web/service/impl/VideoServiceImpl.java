@@ -12,6 +12,7 @@ import com.yunkesoftware.www.exception.YunKeException;
 import com.yunkesoftware.www.utils.IpUtils;
 import com.yunkesoftware.www.web.entity.*;
 import com.yunkesoftware.www.web.mapper.*;
+import com.yunkesoftware.www.web.service.TimeLimitService;
 import com.yunkesoftware.www.web.service.VideoService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +48,8 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
     private RedisTemplate<String, Object> redisTemplate;
     @Resource
     private VideoActivityMapper videoActivityMapper;
+    @Resource
+    private TimeLimitService timeLimitService;
 
     @Override
     public Page<Video> pageByQuery(Video video) {
@@ -55,30 +59,37 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
                 .eq(video.getRewardFlag() != null, Video::getRewardFlag, video.getRewardFlag())
                 .eq(Video::getStatus, true)
                 .orderByAsc(Video::getSeq));
-        if (StpUtil.isLogin()) {
-            String userId = StpUtil.getLoginIdAsString();
-            UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
-                    .eq(UserWallet::getUserId, userId)
-                    .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
-            if (userWallet != null) {
-                for (Video record : pageResult.getRecords()) {
-                    if (Boolean.TRUE.equals(video.getRewardFlag())) {
-                        UserWalletRecord checkData = userWalletRecordMapper.selectOne(new LambdaQueryWrapper<UserWalletRecord>()
-                                .eq(UserWalletRecord::getWalletId, userWallet.getId())
-                                .eq(UserWalletRecord::getEventId, record.getId())
-                                .eq(UserWalletRecord::getEventType, UserWalletEventEnum.VIDEO.getKey())
-                                .select(UserWalletRecord::getId));
-                        record.setGetFlag(checkData != null);
-                    }
-                    if (Boolean.TRUE.equals(video.getTicketFlag())) {
-                        Long ticketNum = ticketRecordMapper.selectCount(new LambdaQueryWrapper<TicketRecord>()
-                                .eq(TicketRecord::getTicketVideoId, record.getId())
-                                .eq(TicketRecord::getUserId, userId));
-                        record.setTicketNum(ticketNum);
-                    }
+        if (!StpUtil.isLogin()) {
+            return pageResult;
+        }
+        String userId = StpUtil.getLoginIdAsString();
+        UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
+                .eq(UserWallet::getUserId, userId)
+                .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
+//        TicketActivity ticketActivity = (TicketActivity) redisTemplate.opsForValue().get(RedisKey.TICKET_ACTIVITY);
+        if (userWallet != null) {
+            for (Video record : pageResult.getRecords()) {
+                if (Boolean.TRUE.equals(video.getRewardFlag())) {
+                    UserWalletRecord checkData = userWalletRecordMapper.selectOne(new LambdaQueryWrapper<UserWalletRecord>()
+                            .eq(UserWalletRecord::getWalletId, userWallet.getId())
+                            .eq(UserWalletRecord::getEventId, record.getId())
+                            .eq(UserWalletRecord::getEventType, UserWalletEventEnum.VIDEO.getKey())
+                            .select(UserWalletRecord::getId));
+                    record.setGetFlag(checkData != null);
+                }
+                if (Boolean.TRUE.equals(video.getTicketFlag())) {
+                    Long ticketNum = ticketRecordMapper.selectCount(new LambdaQueryWrapper<TicketRecord>()
+                            .eq(TicketRecord::getTicketVideoId, record.getId())
+                            .eq(TicketRecord::getUserId, userId));
+                    record.setTicketNum(ticketNum);
                 }
             }
-
+            // 投票人数+总票数乘以倍数
+//            if (ticketActivity != null) {
+//                if (ticketActivity.getTicketMultiple() != null && record.getTicketTotal() != null) {
+//                    record.setTicketTotal(record.getTicketTotal() * ticketActivity.getTicketMultiple());
+//                }
+//            }
         }
         return pageResult;
     }
@@ -120,9 +131,10 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         // 已经使用的票数
         Long usedTicketNum = ticketRecordMapper.selectCount(new LambdaQueryWrapper<TicketRecord>()
                 .eq(TicketRecord::getTicketActivityId, ticketActivity.getId())
-                .eq(TicketRecord::getUserId, userId));
+                .eq(TicketRecord::getUserId, userId)
+                .like(TicketRecord::getCreateTime, LocalDate.now()));
         if (usedTicketNum >= ticketActivity.getTicketLimit()) {
-            throw new YunKeException(ExceptionEnum.FAIL, "您已没有剩余票数了");
+            throw new YunKeException(ExceptionEnum.FAIL, "当日票数已用完");
         }
 
         // 生成投票记录(修改视频+活动投票数)
@@ -136,21 +148,18 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         baseMapper.update(new LambdaUpdateWrapper<Video>()
                 .eq(Video::getId, id)
                 .set(Video::getTicketTotal, video.getTicketTotal() + 1));
-        // 当前投票活动投票用户数
-        TicketRecord checkData = ticketRecordMapper.selectOne(new LambdaQueryWrapper<TicketRecord>()
-                .eq(TicketRecord::getUserId, userId)
-                .eq(TicketRecord::getTicketActivityId, ticketActivity.getId())
-                .last("LIMIT 1")
-                .select(TicketRecord::getId));
+        // 更新投票人数+活动总票数
+        long ticketUser = ticketRecordMapper.countUser(ticketActivity.getId());
         ticketActivityMapper.update(new LambdaUpdateWrapper<TicketActivity>()
                 .eq(TicketActivity::getId, ticketActivity.getId())
                 .set(TicketActivity::getTicketTotal, ticketActivity.getTicketTotal() + 1)
-                .set(checkData == null, TicketActivity::getTicketUserNum, ticketActivity.getTicketUserNum() + 1));
-
+                .set(TicketActivity::getTicketUserNum, ticketUser));
     }
 
     @Override
     public void doReward(String id) {
+        // 检查时间是否在限制内
+        timeLimitService.checkTimeLimit();
         VideoActivity videoActivity = (VideoActivity) redisTemplate.opsForValue().get(RedisKey.VIDEO_ACTIVITY);
         LocalDateTime nowTime = LocalDateTime.now();
         if (videoActivity == null) {
@@ -158,8 +167,8 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
                     .le(VideoActivity::getStartTime, nowTime)
                     .gt(VideoActivity::getEndTime, nowTime));
             if (videoActivity == null) {
-                return;
-//                throw new YunKeException(ExceptionEnum.FAIL, "无进行中的视频奖励积分活动-请刷新页面重试");
+//                return;
+                throw new YunKeException(ExceptionEnum.FAIL, "无进行中的视频奖励积分活动-请刷新页面重试");
             }
             Duration duration = Duration.between(nowTime, videoActivity.getEndTime());
             redisTemplate.opsForValue().set(RedisKey.VIDEO_ACTIVITY, videoActivity, duration.getSeconds(), TimeUnit.SECONDS);
@@ -168,8 +177,8 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         Video video = baseMapper.selectById(id);
         if (video == null || Boolean.FALSE.equals(video.getRewardFlag())
                 || video.getRewardAmount().compareTo(BigDecimal.ZERO) < 1) {
-            return;
-//            throw new YunKeException(ExceptionEnum.FAIL, "当前视频不存在或不支持赠送积分-请刷新页面重试");
+//            return;
+            throw new YunKeException(ExceptionEnum.FAIL, "当前视频不存在或不支持赠送积分-请刷新页面重试");
         }
         String userId = StpUtil.getLoginIdAsString();
         UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
@@ -195,8 +204,8 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
                     .eq(UserWalletRecord::getEventType, UserWalletEventEnum.VIDEO.getKey())
                     .select(UserWalletRecord::getId));
             if (checkData != null) {
-                return;
-//                throw new YunKeException(ExceptionEnum.FAIL, "当前视频已获得过积分奖励");
+//                return;
+                throw new YunKeException(ExceptionEnum.FAIL, "当前视频已获得过积分奖励");
             }
 
             if (videoActivity.getRewardLimit() != null) {
@@ -204,8 +213,8 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
                         .eq(UserWalletRecord::getWalletId, userWallet.getId())
                         .eq(UserWalletRecord::getEventType, UserWalletEventEnum.VIDEO.getKey()));
                 if (rewardNum >= videoActivity.getRewardLimit()) {
-                    return;
-//                    throw new YunKeException(ExceptionEnum.FAIL, "视频积分奖励次数已达上限：" + rewardNum + "次！");
+//                    return;
+                    throw new YunKeException(ExceptionEnum.FAIL, "视频积分奖励次数已达上限：" + rewardNum + "次！");
                 }
             }
 

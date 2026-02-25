@@ -10,6 +10,7 @@ import com.yunkesoftware.www.exception.ExceptionEnum;
 import com.yunkesoftware.www.exception.YunKeException;
 import com.yunkesoftware.www.web.entity.*;
 import com.yunkesoftware.www.web.mapper.*;
+import com.yunkesoftware.www.web.service.TimeLimitService;
 import com.yunkesoftware.www.web.service.TopicRecordService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yunkesoftware.www.web.vo.TopicRecordTopicItemVo;
@@ -55,6 +56,8 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
     private UserWalletRecordMapper userWalletRecordMapper;
     @Resource
     private TopicRecordActivityMapper topicRecordActivityMapper;
+    @Resource
+    private TimeLimitService timeLimitService;
 
 
     @Override
@@ -157,37 +160,43 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
         topicRecordTopicItemMapper.insertBatch(recordTopicItemList);
         // 进行奖励积分赠送
         if (rewardAmount.compareTo(BigDecimal.ZERO) > 0) {
-            UserWalletRecord walletRecord = new UserWalletRecord();
-            walletRecord.setEventId(topicRecord.getId());
-            walletRecord.setEventType(UserWalletEventEnum.TOPIC_REWARD.getKey());
-            walletRecord.setChangeAmount(rewardAmount);
+            try {
+                // 检查是否满足时间限制
+                timeLimitService.checkTimeLimit();
+                UserWalletRecord walletRecord = new UserWalletRecord();
+                walletRecord.setEventId(topicRecord.getId());
+                walletRecord.setEventType(UserWalletEventEnum.TOPIC_REWARD.getKey());
+                walletRecord.setChangeAmount(rewardAmount);
 
-            UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
-                    .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey())
-                    .eq(UserWallet::getUserId, userId));
+                UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
+                        .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey())
+                        .eq(UserWallet::getUserId, userId));
 
-            if (userWallet == null) {
-                userWallet = new UserWallet();
-                userWallet.setVersion(0);
-                userWallet.setUserId(userId);
-                userWallet.setType(UserWalletTypeEnum.INTEGRAL.getKey());
-                userWallet.setAmount(rewardAmount);
-                int insertRow = userWalletMapper.insert(userWallet);
-                walletRecord.setStatus(insertRow > 0);
-                walletRecord.setAfterAmount(rewardAmount);
+                if (userWallet == null) {
+                    userWallet = new UserWallet();
+                    userWallet.setVersion(0);
+                    userWallet.setUserId(userId);
+                    userWallet.setType(UserWalletTypeEnum.INTEGRAL.getKey());
+                    userWallet.setAmount(rewardAmount);
+                    int insertRow = userWalletMapper.insert(userWallet);
+                    walletRecord.setStatus(insertRow > 0);
+                    walletRecord.setAfterAmount(rewardAmount);
 
-            } else {
-                BigDecimal afterAmount = userWallet.getAmount().add(rewardAmount);
-                int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()
-                        .eq(UserWallet::getId, userWallet.getId())
-                        .eq(UserWallet::getVersion, userWallet.getVersion())
-                        .set(UserWallet::getVersion, userWallet.getVersion() + 1)
-                        .set(UserWallet::getAmount, afterAmount));
-                walletRecord.setStatus(updateRow > 0);
-                walletRecord.setAfterAmount(afterAmount);
+                } else {
+                    BigDecimal afterAmount = userWallet.getAmount().add(rewardAmount);
+                    int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()
+                            .eq(UserWallet::getId, userWallet.getId())
+                            .eq(UserWallet::getVersion, userWallet.getVersion())
+                            .set(UserWallet::getVersion, userWallet.getVersion() + 1)
+                            .set(UserWallet::getAmount, afterAmount));
+                    walletRecord.setStatus(updateRow > 0);
+                    walletRecord.setAfterAmount(afterAmount);
+                }
+                walletRecord.setWalletId(userWallet.getId());
+                userWalletRecordMapper.insert(walletRecord);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            walletRecord.setWalletId(userWallet.getId());
-            userWalletRecordMapper.insert(walletRecord);
         }
 
         TopicRecordActivity topicRecordActivity = topicRecordActivityMapper.selectOne(new LambdaQueryWrapper<TopicRecordActivity>()

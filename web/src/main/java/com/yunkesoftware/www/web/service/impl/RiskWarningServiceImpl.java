@@ -5,15 +5,19 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.yunkesoftware.www.enums.UserWalletEventEnum;
 import com.yunkesoftware.www.enums.UserWalletTypeEnum;
+import com.yunkesoftware.www.exception.ExceptionEnum;
+import com.yunkesoftware.www.exception.YunKeException;
 import com.yunkesoftware.www.web.entity.*;
 import com.yunkesoftware.www.web.mapper.*;
 import com.yunkesoftware.www.web.service.RiskWarningService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.yunkesoftware.www.web.service.TimeLimitService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 /**
  * <p>
@@ -33,15 +37,22 @@ public class RiskWarningServiceImpl extends ServiceImpl<RiskWarningMapper, RiskW
     private RiskWarningRecordMapper riskWarningRecordMapper;
     @Resource
     private RewardSetMapper rewardSetMapper;
+    @Resource
+    private TimeLimitService timeLimitService;
 
     @Override
     public BigDecimal readFinish(String id) {
+        //2026-2-24新增检查积分时间 3月1日00:01-3月14日16:00
+        timeLimitService.checkTimeLimit();
+
         RiskWarning checkData = baseMapper.selectOne(new LambdaQueryWrapper<RiskWarning>()
                 .eq(RiskWarning::getId, id)
                 .select(RiskWarning::getId, RiskWarning::getStatus, RiskWarning::getRewardAmount, RiskWarning::getRewardNum));
-        if (checkData == null || !checkData.getStatus() || checkData.getRewardAmount().compareTo(BigDecimal.ZERO) < 1) {
-            return BigDecimal.ZERO;
+        if (checkData == null || !checkData.getStatus()
+                || checkData.getRewardAmount().compareTo(BigDecimal.ZERO) < 1) {
+            throw new YunKeException(ExceptionEnum.FAIL, "风险提示不存在或已删除或未设置积分奖励");
         }
+
         String userId = StpUtil.getLoginIdAsString();
 
         RewardSet rewardSet = rewardSetMapper.selectOne(new LambdaQueryWrapper<RewardSet>()
@@ -56,7 +67,8 @@ public class RiskWarningServiceImpl extends ServiceImpl<RiskWarningMapper, RiskW
                         .last("LIMIT 1"));
                 // 今天之前已经阅读过(不算首次阅读不进行奖励赠送)
                 if (riskWarningRecord != null && riskWarningRecord.getCreateTime().toLocalDate().isBefore(LocalDate.now())) {
-                    return BigDecimal.ZERO;
+                    String formatTime = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(riskWarningRecord.getCreateTime());
+                    throw new YunKeException(ExceptionEnum.FAIL, "首次阅读才可获得积分，当前首次阅读时间为：" + formatTime);
                 }
             }
         }
@@ -89,7 +101,7 @@ public class RiskWarningServiceImpl extends ServiceImpl<RiskWarningMapper, RiskW
             if (rewardSet != null) {
                 int dailyRewardNum = userWalletRecordMapper.countTodayNum(userWallet.getId(), UserWalletEventEnum.RISK_READ.getKey(), LocalDate.now());
                 if (rewardSet.getRewardLimit() <= dailyRewardNum) {
-                    return BigDecimal.ZERO;
+                    throw new YunKeException(ExceptionEnum.FAIL, "今日已达到次数上限" + rewardSet.getRewardLimit());
                 }
             }
             // 没有赠送过才进行赠送
@@ -117,7 +129,7 @@ public class RiskWarningServiceImpl extends ServiceImpl<RiskWarningMapper, RiskW
         }
         return BigDecimal.ZERO;
     }
-    
+
 
     @Override
     public RiskWarning getOneById(String id) {

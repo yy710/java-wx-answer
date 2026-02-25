@@ -2,6 +2,7 @@ package com.yunkesoftware.www.web.mapper;
 
 import com.yunkesoftware.www.web.entity.TicketRecord;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * <p>
@@ -13,4 +14,5 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  */
 public interface TicketRecordMapper extends BaseMapper<TicketRecord> {
 
+    long countUser(@Param("activityId") String id);
 }
