@@ -45,8 +45,4 @@ public class Topic implements Serializable {
     @TableField(exist = false)
     private List<TopicItem> topicItemList;
 
-    @Schema(description = "1-首次答题 2-答错 3-答对")
-    @TableField(exist = false)
-    private Integer againType = 1;
-
 }

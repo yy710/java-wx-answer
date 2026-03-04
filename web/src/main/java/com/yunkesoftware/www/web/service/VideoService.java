@@ -14,11 +14,13 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface VideoService extends IService<Video> {
 
-    Page<Video> pageByQuery(Video video);
+    Page<Video> pageTicket(Video video);
 
     void doVote(String id);
 
-    void doReward(String id);
+    void doReward(String id,Integer activityType);
 
-    Video getOneById(String id);
+    Video getOneById(String id, Integer activityType);
+
+    Page<Video> pageIntegral(Video video);
 }

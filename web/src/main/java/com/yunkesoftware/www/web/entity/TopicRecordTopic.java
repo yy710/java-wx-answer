@@ -1,14 +1,10 @@
 package com.yunkesoftware.www.web.entity;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.yunkesoftware.www.utils.LocalDateUtils;
-import com.yunkesoftware.www.query.PageCurrency;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
-import java.io.Serializable;
+
 import java.math.BigDecimal;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -38,6 +34,10 @@ public class TopicRecordTopic {
     @Schema(description = "答题记录id")
     @TableField("topic_record_id")
     private String topicRecordId;
+
+    @Schema(description = "用户id")
+    @TableField("user_id")
+    private String userId;
 
     @Schema(description = "题目id")
     @TableField("topic_id")

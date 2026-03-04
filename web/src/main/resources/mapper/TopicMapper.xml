@@ -5,16 +5,36 @@
     <!-- 通用查询映射结果 -->
     <resultMap id="BaseResultMap" type="com.yunkesoftware.www.web.entity.Topic">
         <id column="id" property="id" />
-        <result column="topic_line_id" property="topicLineId" />
         <result column="title" property="title" />
         <result column="reward_amount" property="rewardAmount" />
-        <result column="create_time" property="createTime" />
-        <result column="update_time" property="updateTime" />
     </resultMap>
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id, topic_line_id, title, reward_amount, create_time, update_time
+        id, title, reward_amount,
     </sql>
+    <select id="listNewOrWrong" resultType="com.yunkesoftware.www.web.entity.Topic">
+        SELECT id, title, reward_amount
+        FROM topic t
+        <if test="rightIds != null and rightIds.size()>0">
+            WHERE id NOT IN
+            <foreach item="item" collection="rightIds" index="index" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        ORDER BY RAND()
+        LIMIT #{topicNum}
+    </select>
+    <select id="listRight" resultType="com.yunkesoftware.www.web.entity.Topic">
+        SELECT id, title, reward_amount
+        FROM topic 
+        WHERE id IN
+        <foreach item="item" collection="rightIds" index="index" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+        ORDER BY RAND()
+        LIMIT #{topicNum}
+    </select>
+
 
 </mapper>

@@ -46,7 +46,7 @@ public class VideoController {
 
     @Operation(summary = "添加或修改")
     @PostMapping("/addOrModify")
-//    @YunkeSysLog("活动视频-添加或修改")
+    @YunkeSysLog("活动视频-添加或修改")
     public CommonResult<Object> addOrModify(@Valid @RequestBody Video video) {
         videoService.addOrModify(video);
         return CommonResult.success();

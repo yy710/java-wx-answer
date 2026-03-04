@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -64,16 +65,11 @@ public class TopicLineServiceImpl extends ServiceImpl<TopicLineMapper, TopicLine
             redisTemplate.opsForValue().set(RedisKey.TOPIC_ACTIVITY, topicActivity, seconds, TimeUnit.SECONDS);
         }
 
-        List<TopicLine> topicLineList = (List<TopicLine>) redisTemplate.opsForValue().get(RedisKey.TOPIC_LINE_KEY + topicActivity.getId());
-        if (topicLineList == null) {
-            topicLineList = baseMapper.selectList(new LambdaQueryWrapper<TopicLine>()
-                    .eq(TopicLine::getTopicActivityId, topicActivity.getId())
-                    .eq(TopicLine::getStatus, true)
-                    .orderByAsc(TopicLine::getSeq)
-                    .last("LIMIT 7"));
-            long seconds = Duration.between(nowTime, topicActivity.getEndTime()).getSeconds();
-            redisTemplate.opsForValue().set(RedisKey.TOPIC_LINE_KEY + topicActivity.getId(), topicLineList, seconds, TimeUnit.SECONDS);
-        }
+        List<TopicLine> topicLineList = baseMapper.selectList(new LambdaQueryWrapper<TopicLine>()
+                .eq(TopicLine::getTopicActivityId, topicActivity.getId())
+                .eq(TopicLine::getStatus, true)
+                .orderByAsc(TopicLine::getSeq)
+                .last("LIMIT 7"));
 
         // 50积分点亮一个站点
         UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
@@ -85,7 +81,7 @@ public class TopicLineServiceImpl extends ServiceImpl<TopicLineMapper, TopicLine
         }
         if (i > 0) {
             for (TopicLine topicLine : topicLineList) {
-                topicLine.setDoneFlag(topicLine.getLightSeq() < i);
+                topicLine.setDoneFlag(topicLine.getLightSeq() <= i);
             }
         }
         return topicLineList;
@@ -99,8 +95,12 @@ public class TopicLineServiceImpl extends ServiceImpl<TopicLineMapper, TopicLine
             return false;
         }
         if (topicActivity.getLimitNum() != null) {
-            int todayNum = topicRecordMapper.countUserTodayNum(userId, topicActivity.getId(), LocalDate.now(), id);
-            return todayNum < topicActivity.getLimitNum();
+            // 当日答题线路数
+            Set<String> lineIdList = topicRecordMapper.listLineId(userId, topicActivity.getId(), LocalDate.now(), id);
+            if (lineIdList == null || lineIdList.contains(id)) {
+                return true;
+            }
+            return lineIdList.size() < topicActivity.getLimitNum();
         }
         return true;
     }

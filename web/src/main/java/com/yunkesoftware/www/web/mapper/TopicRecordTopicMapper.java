@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * <p>
@@ -17,4 +18,6 @@ import java.util.List;
 public interface TopicRecordTopicMapper extends BaseMapper<TopicRecordTopic> {
 
     void insertBatch(@Param("dataList") List<TopicRecordTopic> recordTopicList);
+
+    Set<String> listRightTopicId(@Param("userId") String userId);
 }

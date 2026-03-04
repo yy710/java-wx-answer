@@ -18,9 +18,9 @@ spring:
     default-property-inclusion: ALWAYS
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3307/city-walk?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://127.0.0.1:3306/city-walk?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
     username: city-walk
-    password: 6xBhxDP4AiMzMXab
+    password: KaTmAjEJxynhFh7S
   main:
     allow-bean-definition-overriding: true
   mvc:
@@ -39,8 +39,8 @@ spring:
           max-wait: -1
           max-idle: 50
           min-idle: 0
-      password: redis_yk888888
-      database: 2
+      password: citywalkRedis
+      database: 1
 
 mybatis:
   type-aliases-package: com.yunkesoftware.www.entity
@@ -79,13 +79,13 @@ sa-token:
   # 配置Sa-Token单独使用的Redis连接
   alone-redis:
     # Redis数据库索引（默认为0）
-    database: 2
+    database: 1
     # Redis服务器地址
     host: 127.0.0.1
     # Redis服务器连接端口
     port: 6379
     # Redis服务器连接密码（默认为空）
-    password: redis_yk888888
+    password: citywalkRedis
     # 连接超时时间（毫秒）
     timeout: 5000ms
 

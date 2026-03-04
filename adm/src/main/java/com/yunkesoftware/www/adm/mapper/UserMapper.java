@@ -2,6 +2,9 @@ package com.yunkesoftware.www.adm.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.yunkesoftware.www.adm.entity.User;
+import org.apache.ibatis.annotations.Param;
+
+import java.time.LocalDate;
 
 /**
  * <p>
@@ -13,4 +16,5 @@ import com.yunkesoftware.www.adm.entity.User;
  */
 public interface UserMapper extends BaseMapper<User> {
 
+    Long countByDate(@Param("dateParam") LocalDate nowDate);
 }

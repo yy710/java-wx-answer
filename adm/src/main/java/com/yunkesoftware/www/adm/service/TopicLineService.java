@@ -2,8 +2,6 @@ package com.yunkesoftware.www.adm.service;
 
 import com.yunkesoftware.www.adm.entity.TopicLine;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.yunkesoftware.www.adm.entity.TopicLineTopic;
-import com.yunkesoftware.www.adm.vo.TopicLineTopicVo;
 
 import java.util.List;
 
@@ -18,10 +16,6 @@ import java.util.List;
 public interface TopicLineService extends IService<TopicLine> {
 
     void delete(List<String> ids);
-
-    void setTopic(TopicLineTopicVo vo);
-
-    List<TopicLineTopic> getTopic(String id);
 
     void addOrModify(TopicLine topicLine);
 }

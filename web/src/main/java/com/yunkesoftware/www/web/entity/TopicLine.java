@@ -50,9 +50,9 @@ public class TopicLine implements Serializable {
     @TableField("status")
     private Boolean status;
 
-    @Schema(description = "答题用户数")
-    @TableField("user_num")
-    private Integer userNum;
+    @Schema(description = "随机题目数")
+    @TableField("topic_num")
+    private Integer topicNum;
 
     @Schema(description = "描述")
     @TableField("descr")

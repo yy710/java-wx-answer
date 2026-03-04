@@ -28,6 +28,8 @@
         rw.status,
         rw.seq,
         rw.view_num,
+        rw.time_min,
+        rw.reward_num,
         rw.descr,
         c.title AS categoryTitle
         FROM risk_warning rw

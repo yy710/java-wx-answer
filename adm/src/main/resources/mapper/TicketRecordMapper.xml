@@ -34,5 +34,11 @@
         </where>
         ORDER BY tr.id DESC
     </select>
+    <select id="countByDate" resultType="java.lang.Long">
+        SELECT
+        COUNT(1)
+        FROM ticket_record
+        WHERE DATE(create_time) = #{dateParam}
+    </select>
 
 </mapper>

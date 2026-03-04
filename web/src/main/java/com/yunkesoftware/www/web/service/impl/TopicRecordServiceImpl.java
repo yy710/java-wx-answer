@@ -24,7 +24,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * <p>
@@ -44,8 +43,6 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
     private TopicActivityMapper topicActivityMapper;
     @Resource
     private TopicLineMapper topicLineMapper;
-    @Resource
-    private TopicLineTopicMapper topicLineTopicMapper;
     @Resource
     private TopicItemMapper topicItemMapper;
     @Resource
@@ -73,22 +70,12 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
         }
 
         String userId = StpUtil.getLoginIdAsString();
+
+        // 首次答题才能获得积分
         TopicRecord checkData = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
-                .eq(TopicRecord::getTopicActivityId, topicActivity.getId())
                 .eq(TopicRecord::getTopicLineId, topicLine.getId())
                 .eq(TopicRecord::getUserId, userId)
-                .orderByDesc(TopicRecord::getId)
                 .last("LIMIT 1"));
-        if (checkData != null && Objects.equals(checkData.getRightNum(), checkData.getTotalNum())) {
-            throw new YunKeException(ExceptionEnum.FAIL, "当前地图答题奖励已全部获得");
-        }
-        // 每日可答题的数量限制
-        if (topicActivity.getLimitNum() != null) {
-            int todayNum = baseMapper.countUserTodayNum(userId, topicActivity.getId(), LocalDate.now(), vo.getTopicLineId());
-            if (todayNum >= topicActivity.getLimitNum()) {
-                throw new YunKeException(ExceptionEnum.FAIL, "您今日打卡次数已达上限-请明天再来");
-            }
-        }
 
         BigDecimal rewardAmount = BigDecimal.ZERO;// 奖励积分数
         int rightNum = 0; // 答对的题目数
@@ -106,22 +93,14 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
         List<TopicRecordTopicItem> recordTopicItemList = new ArrayList<>();
 
         for (TopicRecordTopicVo topicVo : vo.getTopicVoList()) {
-
-            // 循环查询+判断选项答案是否正确
-            TopicLineTopic topicLineTopic = topicLineTopicMapper.selectOne(new LambdaQueryWrapper<TopicLineTopic>()
-                    .eq(TopicLineTopic::getTopicId, topicVo.getId())
-                    .eq(TopicLineTopic::getTopicLineId, topicLine.getId()));
-            if (topicLineTopic == null) {
-                throw new YunKeException(ExceptionEnum.FAIL, "未知题目信息-请刷新页面重新答题");
-            }
-
-            Topic topic = topicMapper.selectById(topicLineTopic.getTopicId());
+            Topic topic = topicMapper.selectById(topicVo.getId());
             TopicRecordTopic topicRecordTopic = new TopicRecordTopic();
             topicRecordTopic.setId(IdUtil.getSnowflakeNextIdStr());
             topicRecordTopic.setTopicId(topicVo.getId());
             topicRecordTopic.setTopicTitle(topic.getTitle());
             topicRecordTopic.setTopicRecordId(topicRecord.getId());
-            topicRecordTopic.setRewardAmount(topicLineTopic.getRewardAmount());
+            topicRecordTopic.setRewardAmount(topic.getRewardAmount());
+            topicRecordTopic.setUserId(userId);
 
             boolean answerFlag = false;
             // 判断用户选项是否正确
@@ -141,8 +120,8 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
                         && Boolean.TRUE.equals(checkItem.getAnswerFlag())) {
                     rightNum++;
                     answerFlag = true;
-                    if (topicVo.getAgainType() < 3) { //第一次答题或者前面全部打错
-                        rewardAmount = rewardAmount.add(topicLineTopic.getRewardAmount());
+                    if (checkData == null) { //第一次答题获得奖励
+                        rewardAmount = rewardAmount.add(topic.getRewardAmount());
                     }
                 }
                 recordTopicItemList.add(recordTopicItem);
@@ -181,7 +160,6 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
                     int insertRow = userWalletMapper.insert(userWallet);
                     walletRecord.setStatus(insertRow > 0);
                     walletRecord.setAfterAmount(rewardAmount);
-
                 } else {
                     BigDecimal afterAmount = userWallet.getAmount().add(rewardAmount);
                     int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()
@@ -199,44 +177,11 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
             }
         }
 
-        TopicRecordActivity topicRecordActivity = topicRecordActivityMapper.selectOne(new LambdaQueryWrapper<TopicRecordActivity>()
-                .eq(TopicRecordActivity::getTopicActivityId, topicActivity.getId())
-                .eq(TopicRecordActivity::getUserId, userId)
-                .select(TopicRecordActivity::getId, TopicRecordActivity::getTotalRewardAmount));
-        if (topicRecordActivity == null) {
-            topicRecordActivity = new TopicRecordActivity();
-            topicRecordActivity.setTopicActivityId(topicActivity.getId());
-            topicRecordActivity.setTotalRewardAmount(rewardAmount);
-            topicRecordActivity.setUserId(userId);
-            topicRecordActivityMapper.insert(topicRecordActivity);
-        } else {
-            topicRecordActivity.setTotalRewardAmount(topicRecordActivity.getTotalRewardAmount().add(rewardAmount));
-            topicRecordActivityMapper.updateById(topicRecordActivity);
-        }
-
+        TopicRecordActivity topicRecordActivity = new TopicRecordActivity();
+        topicRecordActivity.setTopicActivityId(topicActivity.getId());
+        topicRecordActivity.setTotalRewardAmount(rewardAmount);
+        topicRecordActivity.setUserId(userId);
+        topicRecordActivityMapper.insert(topicRecordActivity);
     }
-
-//    @Override
-//    public TopicRecord getOneByTopicLineId(String topicLineId) {
-//        String userId = StpUtil.getLoginIdAsString();
-//        TopicRecord topicRecord = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
-//                .eq(TopicRecord::getTopicLineId, topicLineId)
-//                .eq(TopicRecord::getUserId, userId));
-//        if (topicRecord != null) {
-//            TopicRecordActivity recordActivity = topicRecordActivityMapper.selectOne(new LambdaQueryWrapper<TopicRecordActivity>()
-//                    .eq(TopicRecordActivity::getTopicActivityId, topicRecord.getTopicActivityId())
-//                    .eq(TopicRecordActivity::getUserId, userId));
-//            if (recordActivity != null) {
-//                // 查询排名
-//                Long preNum = topicRecordActivityMapper.selectCount(new LambdaQueryWrapper<TopicRecordActivity>()
-//                        .eq(TopicRecordActivity::getTopicActivityId, topicRecord.getTopicActivityId())
-//                        .ne(TopicRecordActivity::getUserId, userId)
-//                        .ge(TopicRecordActivity::getTotalRewardAmount, recordActivity.getTotalRewardAmount()));
-//                topicRecord.setTotalRewardAmount(recordActivity.getTotalRewardAmount());
-//                topicRecord.setRankNum(preNum + 1);
-//            }
-//        }
-//        return topicRecord;
-//    }
 
 }

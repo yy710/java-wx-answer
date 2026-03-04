@@ -2,6 +2,8 @@ package com.yunkesoftware.www.adm.service;
 
 import com.yunkesoftware.www.adm.entity.TicketActivity;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.yunkesoftware.www.adm.entity.TicketActivityVideo;
+import com.yunkesoftware.www.adm.vo.TicketActivityVo;
 
 import java.util.List;
 
@@ -18,4 +20,8 @@ public interface TicketActivityService extends IService<TicketActivity> {
     void addOrModify(TicketActivity ticketActivity);
 
     void delete(List<String> ids);
+
+    void setVideo(TicketActivityVo vo);
+
+    List<TicketActivityVideo> getVideo(String id);
 }

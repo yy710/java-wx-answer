@@ -52,7 +52,6 @@ public class TopicActivityServiceImpl extends ServiceImpl<TopicActivityMapper, T
             topicActivity.setUserNum(null);
             topicActivity.setCreateTime(null);
             baseMapper.updateById(topicActivity);
-            redisTemplate.delete(RedisKey.TOPIC_DATA_KEY + topicActivity.getId());
         } else {
             topicActivity.setUserNum(0);
             baseMapper.insert(topicActivity);
@@ -62,6 +61,7 @@ public class TopicActivityServiceImpl extends ServiceImpl<TopicActivityMapper, T
 
     @Override
     public void delete(List<String> ids) {
+        baseMapper.deleteByIds(ids);
         redisTemplate.delete(RedisKey.TOPIC_ACTIVITY);
     }
 }

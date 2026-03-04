@@ -40,5 +40,22 @@
         </where>
         ORDER BY uwr.id DESC
     </select>
+    <select id="countUserNum" resultType="java.lang.Long">
+        SELECT
+        COUNT(DISTINCT wallet_id)
+        FROM user_wallet_record
+        <if test="dateParam != null">
+            WHERE DATE(create_time) = #{dateParam}
+        </if>
+    </select>
+    <select id="countIntegralAmount" resultType="java.math.BigDecimal">
+        SELECT
+        SUM(change_amount)
+        FROM user_wallet_record
+        WHERE change_amount > 0
+        <if test="dateParam != null">
+            AND DATE(create_time) = #{dateParam}
+        </if>
+    </select>
 
 </mapper>

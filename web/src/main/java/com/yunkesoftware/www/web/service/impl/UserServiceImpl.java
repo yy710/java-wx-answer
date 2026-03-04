@@ -131,7 +131,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                             Long checkCount = userWalletRecordMapper.selectCount(new LambdaQueryWrapper<UserWalletRecord>()
                                     .eq(UserWalletRecord::getWalletId, userWallet.getId())
                                     .eq(UserWalletRecord::getEventType, UserWalletEventEnum.INVITE_REWARD.getKey()));
-                            if (checkCount <= inviteSet.getRewardLimit()) {
+                            if (checkCount < inviteSet.getRewardLimit()) {
                                 //执行奖励赠送
                                 BigDecimal afterAmount = userWallet.getAmount().add(inviteSet.getRewardAmount());
                                 int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()

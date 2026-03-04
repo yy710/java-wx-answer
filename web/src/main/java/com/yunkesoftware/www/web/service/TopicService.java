@@ -2,6 +2,7 @@ package com.yunkesoftware.www.web.service;
 
 import com.yunkesoftware.www.web.entity.Topic;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.yunkesoftware.www.web.vo.TopicLineDataVo;
 
 import java.util.List;
 
@@ -15,7 +16,7 @@ import java.util.List;
  */
 public interface TopicService extends IService<Topic> {
 
-    List<Topic> listByQuery(String topicLineId);
+    TopicLineDataVo listByQuery(String topicLineId);
 
     List<Topic> listRandom();
 }

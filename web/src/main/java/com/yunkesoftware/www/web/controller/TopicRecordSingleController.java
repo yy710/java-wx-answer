@@ -3,10 +3,12 @@ package com.yunkesoftware.www.web.controller;
 import com.yunkesoftware.www.result.CommonResult;
 import com.yunkesoftware.www.web.service.TopicRecordSingleService;
 import com.yunkesoftware.www.web.entity.TopicRecordSingle;
+import com.yunkesoftware.www.web.vo.TopicSingleResultVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
+
 
 /**
  * @author yk
@@ -21,8 +23,8 @@ public class TopicRecordSingleController {
 
     @Operation(summary = "新增")
     @PostMapping("/add")
-    public CommonResult<TopicRecordSingle> add(@RequestBody TopicRecordSingle recordSingle) {
-        topicRecordSingleService.add(recordSingle);
-        return CommonResult.success();
+    public CommonResult<TopicSingleResultVo> add(@RequestBody TopicRecordSingle recordSingle) {
+        TopicSingleResultVo resultVo = topicRecordSingleService.add(recordSingle);
+        return CommonResult.success(resultVo);
     }
 }

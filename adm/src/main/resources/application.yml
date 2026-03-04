@@ -1,17 +1,17 @@
 spring:
   servlet:
     multipart:
-      max-request-size: 100MB
-      max-file-size: 100MB
+      max-request-size: 200MB
+      max-file-size: 200MB
   profiles:
-    active: prod
+    active: dev
 
 logging:
   level:
     org.springframework.web: info
 
 wx:
-  miniapp:
+  mp:
     configs:
       - appId:   # 小程序微信公众平台appId
         secret:   # 小程序微信公众平台api秘钥

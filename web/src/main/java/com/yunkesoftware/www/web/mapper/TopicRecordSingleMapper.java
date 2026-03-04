@@ -1,10 +1,12 @@
 package com.yunkesoftware.www.web.mapper;
 
+import com.yunkesoftware.www.web.entity.Topic;
 import com.yunkesoftware.www.web.entity.TopicRecordSingle;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * <p>
@@ -16,5 +18,6 @@ import java.util.List;
  */
 public interface TopicRecordSingleMapper extends BaseMapper<TopicRecordSingle> {
 
-    List<String> listRightTopicId(@Param("userId") String userId);
+    Set<String> listRightTopicId(@Param("userId") String userId);
+
 }

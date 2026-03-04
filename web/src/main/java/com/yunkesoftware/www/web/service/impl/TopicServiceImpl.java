@@ -2,20 +2,21 @@ package com.yunkesoftware.www.web.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.yunkesoftware.www.constant.RedisKey;
-import com.yunkesoftware.www.web.entity.*;
+import com.yunkesoftware.www.exception.ExceptionEnum;
+import com.yunkesoftware.www.exception.YunKeException;
+
+import com.yunkesoftware.www.web.entity.Topic;
+import com.yunkesoftware.www.web.entity.TopicItem;
+import com.yunkesoftware.www.web.entity.TopicLine;
+import com.yunkesoftware.www.web.entity.TopicRecord;
 import com.yunkesoftware.www.web.mapper.*;
 import com.yunkesoftware.www.web.service.TopicService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.yunkesoftware.www.web.vo.TopicLineDataVo;
 import jakarta.annotation.Resource;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
 
 /**
  * <p>
@@ -28,77 +29,59 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements TopicService {
     @Resource
-    private TopicLineTopicMapper topicLineTopicMapper;
-    @Resource
-    private RedisTemplate<String, Object> redisTemplate;
-    @Resource
     private TopicItemMapper topicItemMapper;
     @Resource
     private TopicRecordSingleMapper topicRecordSingleMapper;
     @Resource
+    private TopicLineMapper topicLineMapper;
+    @Resource
     private TopicRecordMapper topicRecordMapper;
     @Resource
     private TopicRecordTopicMapper topicRecordTopicMapper;
-    @Resource
-    private TopicRecordTopicItemMapper topicRecordTopicItemMapper;
 
     @Override
-    public List<Topic> listByQuery(String topicLineId) {
-        // 用户如果已经答过则查询记录数据
-        // 如果全部答对则直接缓存起来供用户再次查看
-        List<Topic> topicList = (List<Topic>) redisTemplate.opsForValue().get(RedisKey.TOPIC_DATA_KEY + topicLineId);
-        if (topicList == null) {
-            topicList = topicLineTopicMapper.listByTopicLineId(topicLineId);
-            // 缓存5分钟
-            for (Topic topic : topicList) {
-                buildTopicItemList(topic);
-            }
-            redisTemplate.opsForValue().set(RedisKey.TOPIC_DATA_KEY + topicLineId, topicList, 10, TimeUnit.MINUTES);
+    public TopicLineDataVo listByQuery(String topicLineId) {
+        TopicLine topicLine = topicLineMapper.selectById(topicLineId);
+        if (topicLine == null) {
+            throw new YunKeException(ExceptionEnum.FAIL, "地图数据不存在-请刷新重试");
+        }
+        if (topicLine.getTopicNum() == null || topicLine.getTopicNum() <= 0) {
+            throw new YunKeException(ExceptionEnum.FAIL, "当前地图活动不支持答题-请联系管理人员配置");
         }
 
-        // TODO 全部答对的用户的记录数据直接增加缓存加快响应速度
+        TopicLineDataVo topicLineDataVo = new TopicLineDataVo();
         String userId = StpUtil.getLoginIdAsString();
+        //优先未答/错题
+        Set<String> rightTopicIdList = topicRecordTopicMapper.listRightTopicId(userId);
 
-        TopicRecord topicRecord = topicRecordMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
-                .eq(TopicRecord::getTopicLineId, topicLineId)
-                .eq(TopicRecord::getUserId, userId)
-                .orderByDesc(TopicRecord::getId)
-                .select(TopicRecord::getId, TopicRecord::getRightNum, TopicRecord::getTotalNum)
-                .last("LIMIT 1"));
-        // 当前线路用户已有答题记录则查询用户的答题记录
-        if (topicRecord != null) {
-            List<TopicRecordTopic> recordTopicList = topicRecordTopicMapper.selectList(new LambdaQueryWrapper<TopicRecordTopic>()
-                    .eq(TopicRecordTopic::getTopicRecordId, topicRecord.getId()));
-            if (recordTopicList.size() > 0) {
-                for (Topic topic : topicList) {
-                    for (TopicRecordTopic recordTopic : recordTopicList) {
-                        if (recordTopic.getTopicId().equals(topic.getId())) {
-                            topic.setAgainType(recordTopic.getAnswerFlag() ? 3 : 2);
-                            List<TopicRecordTopicItem> recordTopicItemList = topicRecordTopicItemMapper.selectList(new LambdaQueryWrapper<TopicRecordTopicItem>()
-                                    .eq(TopicRecordTopicItem::getTopicRecordTopicId, recordTopic.getId()));
-                            for (TopicItem topicItem : topic.getTopicItemList()) {
-                                for (TopicRecordTopicItem item : recordTopicItemList) {
-                                    if (item.getTopicItemId().equals(topicItem.getId())) {
-                                        topicItem.setCheckFlag(item.getCheckFlag());
-                                        break;
-                                    }
-                                }
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-            // 如果全部答对则缓存起来
+        List<Topic> topicList = baseMapper.listNewOrWrong(rightTopicIdList, topicLine.getTopicNum());
+        // 没答过+错题总数不足的。需要从已答正确的中获取剩余数量补齐
+        if (rightTopicIdList.size() > 0 && topicList.size() < topicLine.getTopicNum()) {
+            List<Topic> rightTopicList = baseMapper.listRight(rightTopicIdList, topicLine.getTopicNum() - topicList.size());
+            topicList.addAll(rightTopicList);
         }
-        return topicList;
+        //题目不够-不考虑了
+        // 用户已经答对的题目进行过滤筛选
+        for (Topic topic : topicList) {
+            buildTopicItemList(topic);
+        }
+        topicLineDataVo.setTopicList(topicList);
+        // 判断用户当前地图是否是首次答题
+        TopicRecord checkTopicRecord = topicRecordMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
+                .eq(TopicRecord::getUserId, userId)
+                .eq(TopicRecord::getTopicLineId, topicLine.getId())
+                .last("LIMIT 1"));
+        // 时间是否符合条件
+        topicLineDataVo.setFirstFlag(checkTopicRecord == null);
+        topicLineDataVo.setTimeFlag(true);
+        return topicLineDataVo;
     }
 
     @Override
     public List<Topic> listRandom() {
         String userId = StpUtil.getLoginIdAsString();
         List<Topic> dataList = baseMapper.selectList(null);
-        List<String> rightTopicIdList = topicRecordSingleMapper.listRightTopicId(userId);
+        Set<String> rightTopicIdList = topicRecordSingleMapper.listRightTopicId(userId);
         List<Topic> topicAllList = new ArrayList<>();
         if (rightTopicIdList.size() > 0) {
             for (Topic topic : dataList) {

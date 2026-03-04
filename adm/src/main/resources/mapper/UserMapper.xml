@@ -8,7 +8,9 @@
         <result column="nick_name" property="nickName" />
         <result column="mobile" property="mobile" />
         <result column="pic" property="pic" />
-        <result column="wx_open_id" property="wxOpenId" />
     </resultMap>
+    <select id="countByDate" resultType="java.lang.Long">
+        SELECT COUNT(1) FROM yk_user WHERE DATE_FORMAT(create_time,'%Y-%m-%d') = #{dateParam}
+    </select>
 
 </mapper>

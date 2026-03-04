@@ -22,7 +22,7 @@
         LEFT JOIN yk_user yu ON uw.user_id = yu.id
         <where>
             <if test="param.nickName != null and param.nickName != ''">
-                AND uw.nick_name LIKE CONCAT('%',#{param.nickName},'%')
+                AND yu.nick_name LIKE CONCAT('%',#{param.nickName},'%')
             </if>
         </where>
     </select>

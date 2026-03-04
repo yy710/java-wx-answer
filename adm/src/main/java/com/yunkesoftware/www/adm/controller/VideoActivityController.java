@@ -4,6 +4,8 @@ package com.yunkesoftware.www.adm.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yunkesoftware.www.adm.annotation.EasyExcelExport;
+import com.yunkesoftware.www.adm.entity.VideoActivityVideo;
+import com.yunkesoftware.www.adm.vo.VideoActivityVo;
 import com.yunkesoftware.www.result.CommonResult;
 import com.yunkesoftware.www.adm.service.VideoActivityService;
 import com.yunkesoftware.www.adm.entity.VideoActivity;
@@ -26,12 +28,6 @@ public class VideoActivityController {
     @Resource
     private VideoActivityService videoActivityService;
 
-    @Operation(summary = "获取全部列表")
-    @PostMapping("/list")
-    @EasyExcelExport()
-    public CommonResult<List<VideoActivity>> list(@RequestBody VideoActivity videoActivity) {
-        return CommonResult.success(videoActivityService.list(new LambdaQueryWrapper<>(videoActivity)));
-    }
 
     @Operation(summary = "分页")
     @PostMapping("/page")
@@ -62,5 +58,19 @@ public class VideoActivityController {
     public CommonResult<Boolean> delete(@RequestBody List<String> ids) {
         videoActivityService.delete(ids);
         return CommonResult.success();
+    }
+
+    @Operation(summary = "设置视频")
+    @PostMapping("/setVideo")
+    public CommonResult<Object> setVideo(@RequestBody VideoActivityVo vo) {
+        videoActivityService.setVideo(vo);
+        return CommonResult.success();
+    }
+
+    @Operation(summary = "查询视频")
+    @GetMapping("/getVideo")
+    public CommonResult<List<VideoActivityVideo>> getVideo(@RequestParam("id") String id) {
+        List<VideoActivityVideo> resultList = videoActivityService.getVideo(id);
+        return CommonResult.success(resultList);
     }
 }

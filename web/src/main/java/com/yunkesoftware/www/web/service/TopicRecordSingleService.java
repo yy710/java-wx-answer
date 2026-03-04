@@ -2,6 +2,8 @@ package com.yunkesoftware.www.web.service;
 
 import com.yunkesoftware.www.web.entity.TopicRecordSingle;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.yunkesoftware.www.web.vo.TopicSingleResultVo;
+
 
 /**
  * <p>
@@ -13,5 +15,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface TopicRecordSingleService extends IService<TopicRecordSingle> {
 
-    void add(TopicRecordSingle recordSingle);
+    TopicSingleResultVo add(TopicRecordSingle recordSingle);
 }

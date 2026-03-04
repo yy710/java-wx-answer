@@ -11,7 +11,6 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -69,30 +68,10 @@ public class Video extends PageCurrency {
     @ExcelProperty("排序")
     private Integer seq;
 
-    @Schema(description = "是否开启投票")
-    @TableField("ticket_flag")
-    @ExcelProperty("是否开启投票")
-    private Boolean ticketFlag;
-
     @Schema(description = "票数")
     @TableField("ticket_total")
     @ExcelProperty("票数")
     private Integer ticketTotal;
-
-    @Schema(description = "是否奖励积分")
-    @TableField("reward_flag")
-    @ExcelProperty("是否奖励积分")
-    private Boolean rewardFlag;
-
-    @Schema(description = "最小观看时长")
-    @TableField("min_time")
-    @ExcelProperty("最小观看时长")
-    private Integer minTime;
-
-    @Schema(description = "奖励积分数")
-    @TableField("reward_amount")
-    @ExcelProperty("奖励积分数")
-    private BigDecimal rewardAmount;
 
     @Schema(description = "创建时间")
     @TableField(value = "create_time", fill = FieldFill.INSERT)

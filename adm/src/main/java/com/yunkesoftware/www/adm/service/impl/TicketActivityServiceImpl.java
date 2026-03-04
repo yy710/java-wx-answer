@@ -2,9 +2,14 @@ package com.yunkesoftware.www.adm.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.yunkesoftware.www.adm.entity.TicketActivity;
+import com.yunkesoftware.www.adm.entity.TicketActivityVideo;
+import com.yunkesoftware.www.adm.entity.Video;
 import com.yunkesoftware.www.adm.mapper.TicketActivityMapper;
+import com.yunkesoftware.www.adm.mapper.TicketActivityVideoMapper;
+import com.yunkesoftware.www.adm.mapper.VideoMapper;
 import com.yunkesoftware.www.adm.service.TicketActivityService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.yunkesoftware.www.adm.vo.TicketActivityVo;
 import com.yunkesoftware.www.constant.RedisKey;
 import com.yunkesoftware.www.exception.ExceptionEnum;
 import com.yunkesoftware.www.exception.YunKeException;
@@ -28,6 +33,10 @@ import java.util.List;
 public class TicketActivityServiceImpl extends ServiceImpl<TicketActivityMapper, TicketActivity> implements TicketActivityService {
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    private VideoMapper videoMapper;
+    @Resource
+    private TicketActivityVideoMapper ticketActivityVideoMapper;
 
     @Override
     public void addOrModify(TicketActivity ticketActivity) {
@@ -75,5 +84,32 @@ public class TicketActivityServiceImpl extends ServiceImpl<TicketActivityMapper,
     public void delete(List<String> ids) {
         baseMapper.deleteByIds(ids);
         redisTemplate.delete(RedisKey.TICKET_ACTIVITY);
+    }
+
+    @Override
+    public void setVideo(TicketActivityVo vo) {
+        ticketActivityVideoMapper.delete(new LambdaQueryWrapper<TicketActivityVideo>()
+                .eq(TicketActivityVideo::getTicketActivityId, vo.getId()));
+        if (vo.getVideoList() != null && vo.getVideoList().size() > 0) {
+            for (TicketActivityVideo ticketActivityVideo : vo.getVideoList()) {
+                ticketActivityVideo.setTicketActivityId(vo.getId());
+                ticketActivityVideoMapper.insert(ticketActivityVideo);
+            }
+        }
+    }
+
+    @Override
+    public List<TicketActivityVideo> getVideo(String id) {
+        List<TicketActivityVideo> resultList = ticketActivityVideoMapper.selectList(new LambdaQueryWrapper<TicketActivityVideo>()
+                .eq(TicketActivityVideo::getTicketActivityId, id));
+        for (TicketActivityVideo activityVideo : resultList) {
+            Video video = videoMapper.selectById(activityVideo.getVideoId());
+            if (video != null) {
+                activityVideo.setVideoTitle(video.getTitle());
+                activityVideo.setVideoUrlPic(video.getUrlPic());
+                activityVideo.setVideoUrlVideo(video.getUrlVideo());
+            }
+        }
+        return resultList;
     }
 }

@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 /**
  * <p>
@@ -19,9 +20,8 @@ import java.util.List;
  */
 public interface TopicRecordMapper extends BaseMapper<TopicRecord> {
 
-
     Integer countGtTotalRewardAmount(@Param("topicActivityId") String topicActivityId, @Param("userId") String userId, @Param("totalRewardAmount") BigDecimal totalRewardAmount);
 
-    int countUserTodayNum(@Param("userId") String userId, @Param("topicActivityId") String topicActivityId,
-                          @Param("dateParam") LocalDate dateParam, @Param("topicLineId") String topicLineId);
+    Set<String> listLineId(@Param("userId") String userId, @Param("topicActivityId") String topicActivityId,
+                           @Param("dateParam") LocalDate dateParam, @Param("topicLineId") String topicLineId);
 }

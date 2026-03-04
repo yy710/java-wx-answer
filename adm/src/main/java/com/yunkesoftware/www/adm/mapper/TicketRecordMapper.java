@@ -5,6 +5,8 @@ import com.yunkesoftware.www.adm.entity.TicketRecord;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDate;
+
 /**
  * <p>
  * 投票记录 Mapper 接口
@@ -16,4 +18,6 @@ import org.apache.ibatis.annotations.Param;
 public interface TicketRecordMapper extends BaseMapper<TicketRecord> {
 
     Page<TicketRecord> pageByQuery(Page<TicketRecord> pageParam, @Param("param") TicketRecord ticketRecord);
+
+    Long countByDate(@Param("dateParam") LocalDate nowDate);
 }

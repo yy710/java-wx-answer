@@ -20,5 +20,4 @@
     <select id="listRightTopicId" resultType="java.lang.String">
         SELECT topic_id FROM topic_record_single WHERE right_flag = 1 AND user_id = #{userId}
     </select>
-
 </mapper>

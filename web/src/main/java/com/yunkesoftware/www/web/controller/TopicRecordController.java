@@ -2,7 +2,6 @@ package com.yunkesoftware.www.web.controller;
 
 import com.yunkesoftware.www.result.CommonResult;
 import com.yunkesoftware.www.web.service.TopicRecordService;
-import com.yunkesoftware.www.web.entity.TopicRecord;
 import com.yunkesoftware.www.web.vo.TopicRecordVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,13 +26,6 @@ public class TopicRecordController {
     public CommonResult<Object> add(@Valid @RequestBody TopicRecordVo vo) {
         topicRecordService.add(vo);
         return CommonResult.success();
-    }
-
-    @Operation(summary = "查询答题记录")
-    @GetMapping("/getOneByTopicLineId")
-    public CommonResult<TopicRecord> getOneByTopicLineId(@RequestParam(value = "topicLineId") String topicLineId) {
-//        TopicRecord topicRecord = topicRecordService.getOneByTopicLineId(topicLineId);
-        return CommonResult.success(null);
     }
 
 }

@@ -6,11 +6,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.yunkesoftware.www.enums.UserWalletEventEnum;
 import com.yunkesoftware.www.enums.UserWalletTypeEnum;
+import com.yunkesoftware.www.exception.ExceptionEnum;
+import com.yunkesoftware.www.exception.YunKeException;
 import com.yunkesoftware.www.web.entity.*;
 import com.yunkesoftware.www.web.mapper.*;
 import com.yunkesoftware.www.web.service.TimeLimitService;
 import com.yunkesoftware.www.web.service.TopicRecordSingleService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.yunkesoftware.www.web.vo.TopicSingleResultVo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
@@ -40,20 +43,12 @@ public class TopicRecordSingleServiceImpl extends ServiceImpl<TopicRecordSingleM
     private TimeLimitService timeLimitService;
 
     @Override
-    public void add(TopicRecordSingle recordSingle) {
+    public TopicSingleResultVo add(TopicRecordSingle recordSingle) {
+
         String userId = StpUtil.getLoginIdAsString();
-        TopicRecordSingle checkData = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecordSingle>()
-                .eq(TopicRecordSingle::getUserId, userId)
-                .eq(TopicRecordSingle::getTopicId, recordSingle.getTopicId())
-                .eq(TopicRecordSingle::getRightFlag, true)
-                .select(TopicRecordSingle::getId)
-                .last("LIMIT 1"));
-        if (checkData != null) {
-            return;
-        }
         Topic topic = topicMapper.selectById(recordSingle.getTopicId());
         if (topic == null) {
-            return;
+            throw new YunKeException(ExceptionEnum.FAIL, "题目不存在-请刷新重试");
         }
 
         String id = IdUtil.getSnowflakeNextIdStr();
@@ -63,6 +58,13 @@ public class TopicRecordSingleServiceImpl extends ServiceImpl<TopicRecordSingleM
         recordSingle.setId(id);
         recordSingle.setRightFlag(false);
         recordSingle.setRewardAmount(topic.getRewardAmount());
+
+        // 只有首次答对才积分
+        TopicRecordSingle checkData = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecordSingle>()
+                .eq(TopicRecordSingle::getUserId, userId)
+                .eq(TopicRecordSingle::getTopicId, recordSingle.getTopicId())
+                .select(TopicRecordSingle::getId)
+                .last("LIMIT 1"));
 
         for (TopicRecordSingleItem singleItem : recordSingle.getRecordSingleItemList()) {
             singleItem.setTopicRecordSingleId(id);
@@ -78,37 +80,56 @@ public class TopicRecordSingleServiceImpl extends ServiceImpl<TopicRecordSingleM
         baseMapper.insert(recordSingle);
         topicRecordSingleItemMapper.insertBatch(recordSingle.getRecordSingleItemList());
 
-        if (recordSingle.getRightFlag() && topic.getRewardAmount().compareTo(BigDecimal.ZERO) > 0) {
+        TopicSingleResultVo resultVo = new TopicSingleResultVo();
+        resultVo.setRewardAmount(BigDecimal.ZERO);
+        if (!recordSingle.getRightFlag()) {
+            return resultVo;
+        }
+        if (topic.getRewardAmount().compareTo(BigDecimal.ZERO) < 1) {
+            return resultVo;
+        }
+
+        try {
             // 检查时间限制
             timeLimitService.checkTimeLimit();
-            UserWalletRecord walletRecord = new UserWalletRecord();
-            walletRecord.setEventId(id);
-            walletRecord.setEventType(UserWalletEventEnum.SINGLE_TOPIC_REWARD.getKey());
-            walletRecord.setChangeAmount(topic.getRewardAmount());
-            // 赠送用户积分
-            UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
-                    .eq(UserWallet::getUserId, userId)
-                    .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
-            if (userWallet == null) {
-                userWallet = new UserWallet();
-                userWallet.setUserId(userId);
-                userWallet.setType(UserWalletTypeEnum.INTEGRAL.getKey());
-                userWallet.setAmount(recordSingle.getRewardAmount());
-                int insertRow = userWalletMapper.insert(userWallet);
-                walletRecord.setStatus(insertRow > 0);
-                walletRecord.setAfterAmount(userWallet.getAmount());
-            } else {
-                BigDecimal afterAmount = userWallet.getAmount().add(recordSingle.getRewardAmount());
-                int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()
-                        .eq(UserWallet::getId, userWallet.getId())
-                        .eq(UserWallet::getVersion, userWallet.getVersion())
-                        .set(UserWallet::getVersion, userWallet.getVersion() + 1)
-                        .set(UserWallet::getAmount, afterAmount));
-                walletRecord.setStatus(updateRow > 0);
-                walletRecord.setAfterAmount(afterAmount);
-            }
-            walletRecord.setWalletId(userWallet.getId());
-            userWalletRecordMapper.insert(walletRecord);
+        } catch (YunKeException e) {
+            resultVo.setMsg(e.getMessage());
+            return resultVo;
         }
+
+        if (checkData != null) {
+            resultVo.setMsg("只有首次答题可获得积分奖励！");
+            return resultVo;
+        }
+        UserWalletRecord walletRecord = new UserWalletRecord();
+        walletRecord.setEventId(id);
+        walletRecord.setEventType(UserWalletEventEnum.SINGLE_TOPIC_REWARD.getKey());
+        walletRecord.setChangeAmount(topic.getRewardAmount());
+        // 赠送用户积分
+        UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
+                .eq(UserWallet::getUserId, userId)
+                .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
+        if (userWallet == null) {
+            userWallet = new UserWallet();
+            userWallet.setUserId(userId);
+            userWallet.setType(UserWalletTypeEnum.INTEGRAL.getKey());
+            userWallet.setAmount(recordSingle.getRewardAmount());
+            int insertRow = userWalletMapper.insert(userWallet);
+            walletRecord.setStatus(insertRow > 0);
+            walletRecord.setAfterAmount(userWallet.getAmount());
+        } else {
+            BigDecimal afterAmount = userWallet.getAmount().add(recordSingle.getRewardAmount());
+            int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()
+                    .eq(UserWallet::getId, userWallet.getId())
+                    .eq(UserWallet::getVersion, userWallet.getVersion())
+                    .set(UserWallet::getVersion, userWallet.getVersion() + 1)
+                    .set(UserWallet::getAmount, afterAmount));
+            walletRecord.setStatus(updateRow > 0);
+            walletRecord.setAfterAmount(afterAmount);
+        }
+        walletRecord.setWalletId(userWallet.getId());
+        userWalletRecordMapper.insert(walletRecord);
+        resultVo.setRewardAmount(topic.getRewardAmount());
+        return resultVo;
     }
 }

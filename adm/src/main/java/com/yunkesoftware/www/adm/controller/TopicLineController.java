@@ -4,8 +4,6 @@ package com.yunkesoftware.www.adm.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yunkesoftware.www.adm.annotation.EasyExcelExport;
-import com.yunkesoftware.www.adm.entity.TopicLineTopic;
-import com.yunkesoftware.www.adm.vo.TopicLineTopicVo;
 import com.yunkesoftware.www.result.CommonResult;
 import com.yunkesoftware.www.adm.service.TopicLineService;
 import com.yunkesoftware.www.adm.entity.TopicLine;
@@ -61,18 +59,4 @@ public class TopicLineController {
         return CommonResult.success();
     }
 
-
-    @Operation(summary = "设置题目")
-    @PostMapping("/setTopic")
-    public CommonResult<Object> setTopic(@RequestBody TopicLineTopicVo vo) {
-        topicLineService.setTopic(vo);
-        return CommonResult.success();
-    }
-
-    @Operation(summary = "查询题目")
-    @GetMapping("/getTopic")
-    public CommonResult<List<TopicLineTopic>> getTopic(@RequestParam(value = "id") String id) {
-        List<TopicLineTopic> resultList = topicLineService.getTopic(id);
-        return CommonResult.success(resultList);
-    }
 }

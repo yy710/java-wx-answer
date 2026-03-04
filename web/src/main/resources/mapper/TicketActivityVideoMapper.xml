@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunkesoftware.www.web.mapper.TicketActivityVideoMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yunkesoftware.www.web.entity.TicketActivityVideo">
+        <result column="ticket_activity_id" property="ticketActivityId" />
+        <result column="video_id" property="videoId" />
+        <result column="seq" property="seq" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        ticket_activity_id, video_id, seq
+    </sql>
+    <select id="pageByQuery" resultType="com.yunkesoftware.www.web.entity.Video">
+        SELECT tav.reward_amount,
+               tav.min_time,
+               v.id,
+               v.title,
+               v.descr,
+               v.url_pic,
+               v.url_video,
+               v.ticket_total
+        FROM ticket_activity_video tav
+                 LEFT JOIN video v ON v.id = tav.video_id
+        WHERE tav.ticket_activity_id = #{param.activityId} AND v.status = 1
+        ORDER BY tav.seq
+    </select>
+
+</mapper>

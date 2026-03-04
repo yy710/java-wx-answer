@@ -4,14 +4,10 @@ import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.yunkesoftware.www.adm.entity.Topic;
 import com.yunkesoftware.www.adm.entity.TopicItem;
-import com.yunkesoftware.www.adm.entity.TopicLineTopic;
 import com.yunkesoftware.www.adm.mapper.TopicItemMapper;
-import com.yunkesoftware.www.adm.mapper.TopicLineTopicMapper;
 import com.yunkesoftware.www.adm.mapper.TopicMapper;
 import com.yunkesoftware.www.adm.service.TopicService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.yunkesoftware.www.exception.ExceptionEnum;
-import com.yunkesoftware.www.exception.YunKeException;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -30,8 +26,6 @@ import java.util.List;
 public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements TopicService {
     @Resource
     private TopicItemMapper topicItemMapper;
-    @Resource
-    private TopicLineTopicMapper topicLineTopicMapper;
 
     @Override
     public void addOrModify(Topic topic) {
@@ -53,11 +47,6 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Override
     public void delete(List<String> ids) {
-        TopicLineTopic checkData = topicLineTopicMapper.selectOne(new LambdaQueryWrapper<TopicLineTopic>()
-                .in(TopicLineTopic::getTopicId, ids).last("LIMIT 1"));
-        if (checkData != null) {
-            throw new YunKeException(ExceptionEnum.FAIL, "已绑定活动的题目不可删除");
-        }
         baseMapper.deleteByIds(ids);
         topicItemMapper.delete(new LambdaQueryWrapper<TopicItem>()
                 .in(TopicItem::getTopicId, ids));

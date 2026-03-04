@@ -5,7 +5,6 @@
     <!-- 通用查询映射结果 -->
     <resultMap id="BaseResultMap" type="com.yunkesoftware.www.web.entity.Video">
         <id column="id" property="id" />
-        <result column="activity_id" property="activityId" />
         <result column="title" property="title" />
         <result column="descr" property="descr" />
         <result column="status" property="status" />
@@ -13,13 +12,11 @@
         <result column="url_pic" property="urlPic" />
         <result column="seq" property="seq" />
         <result column="ticket_total" property="ticketTotal" />
-        <result column="create_time" property="createTime" />
-        <result column="update_time" property="updateTime" />
     </resultMap>
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id, activity_id, title, descr, status, url_video, url_pic, seq, ticket_total, create_time, update_time
+        id, title, descr, status, url_video, url_pic, seq, ticket_total, create_time, update_time
     </sql>
 
 </mapper>

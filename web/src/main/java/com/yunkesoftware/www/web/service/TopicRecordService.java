@@ -17,6 +17,4 @@ public interface TopicRecordService extends IService<TopicRecord> {
 
     void add(TopicRecordVo vo);
 
-//    TopicRecord getOneByTopicLineId(String topicLineId);
-
 }

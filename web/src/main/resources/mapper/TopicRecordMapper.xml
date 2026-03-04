@@ -25,13 +25,13 @@
         WHERE topic_activity_id = #{topicActivityId} AND user_id != #{userId}
         GROUP BY user_id
     </select>
-    <select id="countUserTodayNum" resultType="java.lang.Integer">
-        SELECT COUNT(id)
+
+    <select id="listLineId" resultType="java.lang.String">
+        SELECT topic_line_id
         FROM topic_record
         WHERE topic_activity_id = #{topicActivityId}
           AND user_id = #{userId}
           AND DATE_FORMAT(create_time, '%Y-%m-%d') = #{dateParam}
-        AND topic_line_id != #{topicLineId}
     </select>
 
 </mapper>

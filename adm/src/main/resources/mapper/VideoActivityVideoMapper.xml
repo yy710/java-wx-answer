@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunkesoftware.www.adm.mapper.VideoActivityVideoMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yunkesoftware.www.adm.entity.VideoActivityVideo">
+        <result column="video_activity_id" property="videoActivityId" />
+        <result column="video_id" property="videoId" />
+        <result column="reward_amount" property="rewardAmount" />
+        <result column="seq" property="seq" />
+        <result column="min_time" property="minTime" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        video_activity_id, video_id, reward_amount, seq, min_time
+    </sql>
+    <insert id="insertBatch">
+        INSERT INTO video_activity_video (video_activity_id, video_id, reward_amount, seq, min_time) VALUES
+        <foreach collection="dateList" item="item" separator=",">
+            (#{item.videoActivityId}, #{item.videoId}, #{item.rewardAmount}, #{item.seq}, #{item.minTime})
+        </foreach>
+    </insert>
+
+</mapper>

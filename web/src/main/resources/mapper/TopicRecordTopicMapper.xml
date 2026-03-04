@@ -14,14 +14,17 @@
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id, topic_record_id, topic_id, topic_title, reward_amount, answer_flag
+        id, topic_record_id, topic_id, topic_title, reward_amount, user_id,answer_flag
     </sql>
     <insert id="insertBatch">
-        INSERT INTO topic_record_topic (id, topic_record_id, topic_id, topic_title, reward_amount, answer_flag) VALUES
+        INSERT INTO topic_record_topic (id, topic_record_id, topic_id,user_id, topic_title, reward_amount, answer_flag) VALUES
         <foreach collection="dataList" item="item" separator=",">
-            (#{item.id}, #{item.topicRecordId}, #{item.topicId}, #{item.topicTitle}, #{item.rewardAmount},
+            (#{item.id}, #{item.topicRecordId}, #{item.topicId},#{item.userId}, #{item.topicTitle}, #{item.rewardAmount},
             #{item.answerFlag})
         </foreach>
     </insert>
+    <select id="listRightTopicId" resultType="java.lang.String">
+        SELECT topic_id FROM topic_record_topic WHERE user_id = #{userId} AND answer_flag = true
+    </select>
 
 </mapper>

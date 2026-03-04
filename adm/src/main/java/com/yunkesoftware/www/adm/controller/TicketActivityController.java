@@ -3,6 +3,8 @@ package com.yunkesoftware.www.adm.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yunkesoftware.www.adm.annotation.EasyExcelExport;
+import com.yunkesoftware.www.adm.entity.TicketActivityVideo;
+import com.yunkesoftware.www.adm.vo.TicketActivityVo;
 import com.yunkesoftware.www.annotation.YunkeSysLog;
 import com.yunkesoftware.www.result.CommonResult;
 import com.yunkesoftware.www.adm.service.TicketActivityService;
@@ -58,5 +60,20 @@ public class TicketActivityController {
     public CommonResult<Boolean> delete(@RequestBody List<String> ids) {
         ticketActivityService.delete(ids);
         return CommonResult.success();
+    }
+
+    @Operation(summary = "设置视频")
+    @PostMapping("/setVideo")
+    @YunkeSysLog("投票活动-设置视频")
+    public CommonResult<Boolean> setVideo(@RequestBody TicketActivityVo vo) {
+        ticketActivityService.setVideo(vo);
+        return CommonResult.success();
+    }
+
+    @Operation(summary = "获取视频")
+    @GetMapping("/getVideo")
+    public CommonResult<List<TicketActivityVideo>> getVideo(@RequestParam("id") String id) {
+        List<TicketActivityVideo> resultList = ticketActivityService.getVideo(id);
+        return CommonResult.success(resultList);
     }
 }

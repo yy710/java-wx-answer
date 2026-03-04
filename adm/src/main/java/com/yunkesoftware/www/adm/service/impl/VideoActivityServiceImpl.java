@@ -1,10 +1,15 @@
 package com.yunkesoftware.www.adm.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.yunkesoftware.www.adm.entity.Video;
 import com.yunkesoftware.www.adm.entity.VideoActivity;
+import com.yunkesoftware.www.adm.entity.VideoActivityVideo;
 import com.yunkesoftware.www.adm.mapper.VideoActivityMapper;
+import com.yunkesoftware.www.adm.mapper.VideoActivityVideoMapper;
+import com.yunkesoftware.www.adm.mapper.VideoMapper;
 import com.yunkesoftware.www.adm.service.VideoActivityService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.yunkesoftware.www.adm.vo.VideoActivityVo;
 import com.yunkesoftware.www.constant.RedisKey;
 import com.yunkesoftware.www.exception.ExceptionEnum;
 import com.yunkesoftware.www.exception.YunKeException;
@@ -28,6 +33,10 @@ import java.util.List;
 public class VideoActivityServiceImpl extends ServiceImpl<VideoActivityMapper, VideoActivity> implements VideoActivityService {
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    private VideoActivityVideoMapper videoActivityVideoMapper;
+    @Resource
+    private VideoMapper videoMapper;
 
     @Override
     public void addOrModify(VideoActivity videoActivity) {
@@ -61,5 +70,32 @@ public class VideoActivityServiceImpl extends ServiceImpl<VideoActivityMapper, V
     public void delete(List<String> ids) {
         baseMapper.deleteByIds(ids);
         redisTemplate.delete(RedisKey.VIDEO_ACTIVITY);
+    }
+
+    @Override
+    public void setVideo(VideoActivityVo vo) {
+        videoActivityVideoMapper.delete(new LambdaQueryWrapper<VideoActivityVideo>()
+                .eq(VideoActivityVideo::getVideoActivityId, vo.getId()));
+        if (vo.getVideoList() != null && vo.getVideoList().size() > 0) {
+            for (VideoActivityVideo activityVideo : vo.getVideoList()) {
+                activityVideo.setVideoActivityId(vo.getId());
+            }
+            videoActivityVideoMapper.insertBatch(vo.getVideoList());
+        }
+
+    }
+
+    @Override
+    public List<VideoActivityVideo> getVideo(String id) {
+        List<VideoActivityVideo> resultList = videoActivityVideoMapper.selectList(new LambdaQueryWrapper<VideoActivityVideo>()
+                .eq(VideoActivityVideo::getVideoActivityId, id));
+        for (VideoActivityVideo activityVideo : resultList) {
+            Video video = videoMapper.selectById(activityVideo.getVideoId());
+            activityVideo.setVideoTitle(video.getTitle());
+            activityVideo.setVideoUrlPic(video.getUrlPic());
+            activityVideo.setVideoUrlVideo(video.getUrlVideo());
+        }
+
+        return resultList;
     }
 }
