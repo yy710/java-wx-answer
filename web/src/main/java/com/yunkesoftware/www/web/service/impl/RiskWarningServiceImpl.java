@@ -97,6 +97,9 @@ public class RiskWarningServiceImpl extends ServiceImpl<RiskWarningMapper, RiskW
             baseMapper.updateById(checkData);
             return checkData.getRewardAmount();
         } else {
+            if (userWallet.getAmount().compareTo(BigDecimal.valueOf(4000)) >= 0) {
+                throw new YunKeException(ExceptionEnum.FAIL, "已达积分上限");
+            }
             // 检查当天阅读奖励次数
             if (rewardSet != null) {
                 int dailyRewardNum = userWalletRecordMapper.countTodayNum(userWallet.getId(), UserWalletEventEnum.RISK_READ.getKey(), LocalDate.now());

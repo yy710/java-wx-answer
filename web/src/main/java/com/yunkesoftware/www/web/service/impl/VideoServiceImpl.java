@@ -227,6 +227,9 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
                 throw new YunKeException(ExceptionEnum.FAIL, "当前视频不可获得积分");
             }
             if (userWallet != null) {
+                if (userWallet.getAmount().compareTo(BigDecimal.valueOf(4000)) >= 0) {
+                    throw new YunKeException(ExceptionEnum.FAIL, "已达积分上限");
+                }
                 //检查是否已获得过当前视频的积分
                 UserWalletRecord checkRecord = userWalletRecordMapper.selectOne(new LambdaQueryWrapper<UserWalletRecord>()
                         .eq(UserWalletRecord::getWalletId, userWallet.getId())

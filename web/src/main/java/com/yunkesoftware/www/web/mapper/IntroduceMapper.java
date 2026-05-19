@@ -1,6 +1,6 @@
-package com.yunkesoftware.www.adm.mapper;
+package com.yunkesoftware.www.web.mapper;
 
-import com.yunkesoftware.www.adm.entity.Introduce;
+import com.yunkesoftware.www.web.entity.Introduce;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**

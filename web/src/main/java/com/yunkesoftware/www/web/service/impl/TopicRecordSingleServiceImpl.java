@@ -60,11 +60,11 @@ public class TopicRecordSingleServiceImpl extends ServiceImpl<TopicRecordSingleM
         recordSingle.setRewardAmount(topic.getRewardAmount());
 
         // 只有首次答对才积分
-        TopicRecordSingle checkData = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecordSingle>()
-                .eq(TopicRecordSingle::getUserId, userId)
-                .eq(TopicRecordSingle::getTopicId, recordSingle.getTopicId())
-                .select(TopicRecordSingle::getId)
-                .last("LIMIT 1"));
+//        TopicRecordSingle checkData = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecordSingle>()
+//                .eq(TopicRecordSingle::getUserId, userId)
+//                .eq(TopicRecordSingle::getTopicId, recordSingle.getTopicId())
+//                .select(TopicRecordSingle::getId)
+//                .last("LIMIT 1"));
 
         for (TopicRecordSingleItem singleItem : recordSingle.getRecordSingleItemList()) {
             singleItem.setTopicRecordSingleId(id);
@@ -97,10 +97,10 @@ public class TopicRecordSingleServiceImpl extends ServiceImpl<TopicRecordSingleM
             return resultVo;
         }
 
-        if (checkData != null) {
-            resultVo.setMsg("只有首次答题可获得积分奖励！");
-            return resultVo;
-        }
+//        if (checkData != null) {
+//            resultVo.setMsg("只有首次答题可获得积分奖励！");
+//            return resultVo;
+//        }
         UserWalletRecord walletRecord = new UserWalletRecord();
         walletRecord.setEventId(id);
         walletRecord.setEventType(UserWalletEventEnum.SINGLE_TOPIC_REWARD.getKey());
@@ -118,6 +118,9 @@ public class TopicRecordSingleServiceImpl extends ServiceImpl<TopicRecordSingleM
             walletRecord.setStatus(insertRow > 0);
             walletRecord.setAfterAmount(userWallet.getAmount());
         } else {
+            if (userWallet.getAmount().compareTo(BigDecimal.valueOf(4000)) >= 0) {
+                throw new YunKeException(ExceptionEnum.FAIL, "已达积分上限");
+            }
             BigDecimal afterAmount = userWallet.getAmount().add(recordSingle.getRewardAmount());
             int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()
                     .eq(UserWallet::getId, userWallet.getId())

@@ -20,7 +20,6 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -161,6 +160,9 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
                     walletRecord.setStatus(insertRow > 0);
                     walletRecord.setAfterAmount(rewardAmount);
                 } else {
+                    if (userWallet.getAmount().compareTo(BigDecimal.valueOf(4000)) >= 0) {
+                        throw new YunKeException(ExceptionEnum.FAIL, "已达积分上限");
+                    }
                     BigDecimal afterAmount = userWallet.getAmount().add(rewardAmount);
                     int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()
                             .eq(UserWallet::getId, userWallet.getId())

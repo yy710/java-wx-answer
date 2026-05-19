@@ -16,7 +16,7 @@ public class SQLGenerator {
     private static final String property = "D:\\code\\city-walk-java\\web\\";
     private static final Map<String, Object> urli = Collections.singletonMap("urli", "wx");
     // 表名多个用逗号分隔
-    public static String[] table = {"ticket_activity_video","video_activity_video"};
+    public static String[] table = {"introduce"};
     // 作者
     private static final String authorName = "yk";
     // table前缀
