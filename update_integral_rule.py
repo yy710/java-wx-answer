@@ -21,6 +21,7 @@ DB_PASSWORD = "KaTmAjEJxynhFh7S"
 RULE_FILE_NAME = "积分规则.txt"
 AGREEMENT_TABLE = "yk_agreement"
 SEARCH_KEYWORDS = ("积分规则", "奖品兑换")
+TARGET_TITLE = "积分规则"
 
 # 如需强制按协议 type 更新，将 None 改为对应数字。
 TARGET_TYPE = None
@@ -44,6 +45,12 @@ def build_search_sql():
             f"FROM {AGREEMENT_TABLE} WHERE type = %s"
         ), [TARGET_TYPE]
 
+    if TARGET_TITLE:
+        return (
+            f"SELECT id, type, IFNULL(title, ''), IFNULL(CHAR_LENGTH(content), 0) "
+            f"FROM {AGREEMENT_TABLE} WHERE title = %s"
+        ), [TARGET_TITLE]
+
     title_conditions = " OR ".join(["title LIKE %s" for _ in SEARCH_KEYWORDS])
     content_conditions = " OR ".join(["content LIKE %s" for _ in SEARCH_KEYWORDS])
     params = [f"%{keyword}%" for keyword in SEARCH_KEYWORDS]
@@ -61,10 +68,13 @@ def select_target(fetch_rows):
         return rows[0]
 
     if not rows:
+        if TARGET_TITLE:
+            raise RuntimeError(f"未找到标题为“{TARGET_TITLE}”的协议记录。")
+
         keyword_text = "、".join(SEARCH_KEYWORDS)
         raise RuntimeError(f"未找到标题或内容包含“{keyword_text}”的协议记录。")
 
-    lines = ["找到多条疑似积分规则协议，请先设置 TARGET_TYPE 或清理数据后重试："]
+    lines = ["找到多条疑似积分规则协议，请先设置 TARGET_TYPE / TARGET_TITLE 或清理数据后重试："]
     for row_id, row_type, row_title, content_len in rows:
         lines.append(f"- id={row_id}, type={row_type}, title={row_title}, content_len={content_len}")
     raise RuntimeError("\n".join(lines))
@@ -140,6 +150,8 @@ def sql_quote(value):
 def build_cli_search_sql():
     if TARGET_TYPE is not None:
         where_sql = f"type = {int(TARGET_TYPE)}"
+    elif TARGET_TITLE:
+        where_sql = f"title = {sql_quote(TARGET_TITLE)}"
     else:
         title_conditions = " OR ".join(
             [f"title LIKE {sql_quote('%' + keyword + '%')}" for keyword in SEARCH_KEYWORDS]
