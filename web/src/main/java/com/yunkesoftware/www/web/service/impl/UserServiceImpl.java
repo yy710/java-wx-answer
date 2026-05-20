@@ -26,6 +26,7 @@ import com.yunkesoftware.www.web.vo.LoginVo;
 import com.yunkesoftware.www.web.vo.UserVo;
 import jakarta.annotation.Resource;
 import me.chanjar.weixin.common.bean.oauth2.WxOAuth2AccessToken;
+import me.chanjar.weixin.common.bean.oauth2.WxOAuth2UserInfo;
 import me.chanjar.weixin.common.error.WxErrorException;
 import me.chanjar.weixin.common.service.WxOAuth2Service;
 import me.chanjar.weixin.mp.api.WxMpService;
@@ -89,11 +90,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         Map<String, Object> resultMap = new HashMap<>();
 
         String openId = "123456";
+        WxOAuth2UserInfo wxUserInfo = null;
         if (StringUtils.hasLength(loginVo.getCode())) {
             try {
                 WxOAuth2Service oAuth2Service = wxMpService.getOAuth2Service();
                 WxOAuth2AccessToken accessToken = oAuth2Service.getAccessToken(loginVo.getCode());
                 openId = accessToken.getOpenId();
+                try {
+                    wxUserInfo = oAuth2Service.getUserInfo(accessToken, null);
+                } catch (WxErrorException ignored) {
+                }
             } catch (WxErrorException e) {
                 throw new YunKeException(ExceptionEnum.FAIL, "微信授权异常-请刷新重试");
             }
@@ -103,8 +109,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .eq(User::getOpenId, openId));
         if (checkData == null) {
             checkData = new User();
-            String nickName = NickNameUtil.generateOne();
-            checkData.setNickName(nickName);
+            fillWxUserInfo(checkData, wxUserInfo, true);
+            if (!StringUtils.hasLength(checkData.getNickName())) {
+                checkData.setNickName(NickNameUtil.generateOne());
+            }
             checkData.setOpenId(openId);
             checkData.setCreateTime(LocalDateTime.now());
             if (StringUtils.hasLength(loginVo.getParentId())) {
@@ -159,6 +167,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     }
                 }
             }
+        } else {
+            String oldNickName = checkData.getNickName();
+            String oldPic = checkData.getPic();
+            boolean overwriteGeneratedProfile = !StringUtils.hasLength(checkData.getPic())
+                    && NickNameUtil.isGenerated(checkData.getNickName());
+            fillWxUserInfo(checkData, wxUserInfo, overwriteGeneratedProfile);
+            if (!Objects.equals(oldNickName, checkData.getNickName()) || !Objects.equals(oldPic, checkData.getPic())) {
+                baseMapper.updateById(checkData);
+            }
         }
         StpUtil.login(checkData.getId());
 
@@ -167,6 +184,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         resultMap.put("userInfo", checkData);
         resultMap.put("token", resultToken);
         return resultMap;
+    }
+
+    private void fillWxUserInfo(User user, WxOAuth2UserInfo wxUserInfo, boolean overwrite) {
+        if (wxUserInfo == null) {
+            return;
+        }
+        if (StringUtils.hasLength(wxUserInfo.getNickname()) && (overwrite || !StringUtils.hasLength(user.getNickName()))) {
+            user.setNickName(wxUserInfo.getNickname());
+        }
+        if (StringUtils.hasLength(wxUserInfo.getHeadImgUrl()) && (overwrite || !StringUtils.hasLength(user.getPic()))) {
+            user.setPic(wxUserInfo.getHeadImgUrl());
+        }
     }
 
     @Override

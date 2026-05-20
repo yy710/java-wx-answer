@@ -53,4 +53,44 @@ public class NickNameUtil {
             }
         }
     }
+
+    public static boolean isGenerated(String nickName) {
+        if (nickName == null || nickName.trim().isEmpty()) {
+            return false;
+        }
+        String value = nickName.trim();
+        for (String item : DOUBLE) {
+            if (item.equals(value)) {
+                return true;
+            }
+            if (value.length() == 3 && Character.isDigit(value.charAt(2)) && value.startsWith(item)) {
+                return true;
+            }
+        }
+        for (String first : SINGLE) {
+            for (String second : SINGLE) {
+                if ((first + second).equals(value)) {
+                    return true;
+                }
+            }
+            for (String second : DOUBLE) {
+                if ((first + second).equals(value)) {
+                    return true;
+                }
+            }
+        }
+        for (String first : DOUBLE) {
+            for (String second : SINGLE) {
+                if ((first + second).equals(value)) {
+                    return true;
+                }
+            }
+            for (String second : DOUBLE) {
+                if ((first + second).equals(value)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

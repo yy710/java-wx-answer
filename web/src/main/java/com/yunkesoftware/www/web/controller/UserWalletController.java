@@ -1,7 +1,5 @@
 package com.yunkesoftware.www.web.controller;
 
-import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.yunkesoftware.www.result.CommonResult;
 import com.yunkesoftware.www.web.query.ScanPayQuery;
 import com.yunkesoftware.www.web.service.UserWalletService;
@@ -27,9 +25,7 @@ public class UserWalletController {
     @Operation(summary = "根据Id查询")
     @GetMapping("/getOneByType")
     public CommonResult<UserWallet> getOneByType(@RequestParam(value = "type", defaultValue = "1") Integer type) {
-        return CommonResult.success(userWalletService.getOne(new LambdaQueryWrapper<UserWallet>()
-                .eq(UserWallet::getUserId, StpUtil.getLoginIdAsString())
-                .eq(UserWallet::getType, type)));
+        return CommonResult.success(userWalletService.getOrCreateByType(type));
     }
 
     @Operation(summary = "扫码支付")

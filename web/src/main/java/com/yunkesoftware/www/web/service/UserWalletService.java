@@ -14,6 +14,8 @@ import com.yunkesoftware.www.web.query.ScanPayQuery;
  */
 public interface UserWalletService extends IService<UserWallet> {
 
+    UserWallet getOrCreateByType(Integer type);
+
     void scanPay(ScanPayQuery query);
 
     Boolean checkMax();

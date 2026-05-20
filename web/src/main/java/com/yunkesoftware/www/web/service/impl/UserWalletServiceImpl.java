@@ -17,6 +17,7 @@ import com.yunkesoftware.www.web.mapper.UserWalletRecordMapper;
 import com.yunkesoftware.www.web.query.ScanPayQuery;
 import com.yunkesoftware.www.web.service.UserWalletService;
 import jakarta.annotation.Resource;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -35,6 +36,31 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     private PaymentMapper paymentMapper;
     @Resource
     private UserWalletRecordMapper userWalletRecordMapper;
+
+    @Override
+    public UserWallet getOrCreateByType(Integer type) {
+        String userId = StpUtil.getLoginIdAsString();
+        UserWallet userWallet = baseMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
+                .eq(UserWallet::getUserId, userId)
+                .eq(UserWallet::getType, type));
+        if (userWallet != null) {
+            return userWallet;
+        }
+
+        userWallet = new UserWallet();
+        userWallet.setUserId(userId);
+        userWallet.setType(type);
+        userWallet.setAmount(BigDecimal.ZERO);
+        userWallet.setVersion(0);
+        try {
+            baseMapper.insert(userWallet);
+            return userWallet;
+        } catch (DuplicateKeyException ignored) {
+            return baseMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
+                    .eq(UserWallet::getUserId, userId)
+                    .eq(UserWallet::getType, type));
+        }
+    }
 
     @Override
     public void scanPay(ScanPayQuery query) {
