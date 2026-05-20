@@ -3,21 +3,21 @@ package com.yunkesoftware.www.web.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.yunkesoftware.www.enums.UserWalletEventEnum;
-import com.yunkesoftware.www.enums.UserWalletTypeEnum;
 import com.yunkesoftware.www.exception.ExceptionEnum;
 import com.yunkesoftware.www.exception.YunKeException;
 import com.yunkesoftware.www.web.entity.*;
 import com.yunkesoftware.www.web.mapper.*;
 import com.yunkesoftware.www.web.service.TimeLimitService;
 import com.yunkesoftware.www.web.service.TopicRecordService;
+import com.yunkesoftware.www.web.service.UserWalletService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yunkesoftware.www.web.vo.TopicRecordTopicItemVo;
 import com.yunkesoftware.www.web.vo.TopicRecordTopicVo;
 import com.yunkesoftware.www.web.vo.TopicRecordVo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -47,16 +47,15 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
     @Resource
     private TopicMapper topicMapper;
     @Resource
-    private UserWalletMapper userWalletMapper;
-    @Resource
-    private UserWalletRecordMapper userWalletRecordMapper;
-    @Resource
     private TopicRecordActivityMapper topicRecordActivityMapper;
     @Resource
     private TimeLimitService timeLimitService;
+    @Resource
+    private UserWalletService userWalletService;
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void add(TopicRecordVo vo) {
         TopicLine topicLine = topicLineMapper.selectById(vo.getTopicLineId());
         if (topicLine == null || Boolean.FALSE.equals(topicLine.getStatus())) {
@@ -138,45 +137,8 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
         topicRecordTopicItemMapper.insertBatch(recordTopicItemList);
         // 进行奖励积分赠送
         if (rewardAmount.compareTo(BigDecimal.ZERO) > 0) {
-            try {
-                // 检查是否满足时间限制
-                timeLimitService.checkTimeLimit();
-                UserWalletRecord walletRecord = new UserWalletRecord();
-                walletRecord.setEventId(topicRecord.getId());
-                walletRecord.setEventType(UserWalletEventEnum.TOPIC_REWARD.getKey());
-                walletRecord.setChangeAmount(rewardAmount);
-
-                UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
-                        .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey())
-                        .eq(UserWallet::getUserId, userId));
-
-                if (userWallet == null) {
-                    userWallet = new UserWallet();
-                    userWallet.setVersion(0);
-                    userWallet.setUserId(userId);
-                    userWallet.setType(UserWalletTypeEnum.INTEGRAL.getKey());
-                    userWallet.setAmount(rewardAmount);
-                    int insertRow = userWalletMapper.insert(userWallet);
-                    walletRecord.setStatus(insertRow > 0);
-                    walletRecord.setAfterAmount(rewardAmount);
-                } else {
-                    if (userWallet.getAmount().compareTo(BigDecimal.valueOf(4000)) >= 0) {
-                        throw new YunKeException(ExceptionEnum.FAIL, "已达积分上限");
-                    }
-                    BigDecimal afterAmount = userWallet.getAmount().add(rewardAmount);
-                    int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()
-                            .eq(UserWallet::getId, userWallet.getId())
-                            .eq(UserWallet::getVersion, userWallet.getVersion())
-                            .set(UserWallet::getVersion, userWallet.getVersion() + 1)
-                            .set(UserWallet::getAmount, afterAmount));
-                    walletRecord.setStatus(updateRow > 0);
-                    walletRecord.setAfterAmount(afterAmount);
-                }
-                walletRecord.setWalletId(userWallet.getId());
-                userWalletRecordMapper.insert(walletRecord);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            timeLimitService.checkTimeLimit();
+            userWalletService.rewardIntegral(userId, topicRecord.getId(), UserWalletEventEnum.TOPIC_REWARD.getKey(), rewardAmount);
         }
 
         TopicRecordActivity topicRecordActivity = new TopicRecordActivity();

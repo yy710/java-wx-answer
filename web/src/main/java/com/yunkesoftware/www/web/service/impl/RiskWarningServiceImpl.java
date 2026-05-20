@@ -12,8 +12,10 @@ import com.yunkesoftware.www.web.mapper.*;
 import com.yunkesoftware.www.web.service.RiskWarningService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yunkesoftware.www.web.service.TimeLimitService;
+import com.yunkesoftware.www.web.service.UserWalletService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -39,8 +41,11 @@ public class RiskWarningServiceImpl extends ServiceImpl<RiskWarningMapper, RiskW
     private RewardSetMapper rewardSetMapper;
     @Resource
     private TimeLimitService timeLimitService;
+    @Resource
+    private UserWalletService userWalletService;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public BigDecimal readFinish(String id) {
         //2026-2-24新增检查积分时间 3月1日00:01-3月14日16:00
         timeLimitService.checkTimeLimit();
@@ -76,27 +81,8 @@ public class RiskWarningServiceImpl extends ServiceImpl<RiskWarningMapper, RiskW
         UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
                 .eq(UserWallet::getUserId, userId)
                 .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
-        UserWalletRecord walletRecord = new UserWalletRecord();
-        walletRecord.setEventId(id);
-        walletRecord.setEventType(UserWalletEventEnum.RISK_READ.getKey());
-        walletRecord.setChangeAmount(checkData.getRewardAmount());
 
-        if (userWallet == null) {
-            userWallet = new UserWallet();
-            userWallet.setUserId(userId);
-            userWallet.setType(UserWalletTypeEnum.INTEGRAL.getKey());
-            userWallet.setAmount(checkData.getRewardAmount());
-            userWallet.setVersion(0);
-            int insertRow = userWalletMapper.insert(userWallet);
-            walletRecord.setWalletId(userWallet.getId());
-            walletRecord.setStatus(insertRow > 0);
-            walletRecord.setAfterAmount(userWallet.getAmount());
-            userWalletRecordMapper.insert(walletRecord);
-
-            checkData.setRewardNum(checkData.getRewardNum() + 1);
-            baseMapper.updateById(checkData);
-            return checkData.getRewardAmount();
-        } else {
+        if (userWallet != null) {
             if (userWallet.getAmount().compareTo(BigDecimal.valueOf(4000)) >= 0) {
                 throw new YunKeException(ExceptionEnum.FAIL, "已达积分上限");
             }
@@ -114,23 +100,14 @@ public class RiskWarningServiceImpl extends ServiceImpl<RiskWarningMapper, RiskW
                     .eq(UserWalletRecord::getEventType, UserWalletEventEnum.RISK_READ.getKey())
                     .select(UserWalletRecord::getId, UserWalletRecord::getStatus)
                     .last("LIMIT 1"));
-            if (checkRecord == null) {
-                BigDecimal afterAmount = userWallet.getAmount().add(checkData.getRewardAmount());
-                int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()
-                        .eq(UserWallet::getId, userWallet.getId())
-                        .eq(UserWallet::getVersion, userWallet.getVersion())
-                        .set(UserWallet::getVersion, userWallet.getVersion() + 1)
-                        .set(UserWallet::getAmount, afterAmount));
-                walletRecord.setWalletId(userWallet.getId());
-                walletRecord.setStatus(updateRow > 0);
-                walletRecord.setAfterAmount(afterAmount);
-                userWalletRecordMapper.insert(walletRecord);
-                checkData.setRewardNum(checkData.getRewardNum() + 1);
-                baseMapper.updateById(checkData);
-                return checkData.getRewardAmount();
+            if (checkRecord != null) {
+                return BigDecimal.ZERO;
             }
         }
-        return BigDecimal.ZERO;
+        userWalletService.rewardIntegral(userId, id, UserWalletEventEnum.RISK_READ.getKey(), checkData.getRewardAmount());
+        checkData.setRewardNum(checkData.getRewardNum() + 1);
+        baseMapper.updateById(checkData);
+        return checkData.getRewardAmount();
     }
 
 

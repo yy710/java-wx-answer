@@ -67,6 +67,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = baseMapper.selectById(userId);
         if (user != null) {
             BeanUtils.copyProperties(user, userVo);
+            userVo.setPic(normalizeWxAvatarUrl(userVo.getPic()));
         }
 
         return userVo;
@@ -97,7 +98,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 WxOAuth2AccessToken accessToken = oAuth2Service.getAccessToken(loginVo.getCode());
                 openId = accessToken.getOpenId();
                 try {
-                    wxUserInfo = oAuth2Service.getUserInfo(accessToken, null);
+                    wxUserInfo = oAuth2Service.getUserInfo(accessToken, "zh_CN");
                 } catch (WxErrorException ignored) {
                 }
             } catch (WxErrorException e) {
@@ -170,6 +171,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         } else {
             String oldNickName = checkData.getNickName();
             String oldPic = checkData.getPic();
+            checkData.setPic(normalizeWxAvatarUrl(checkData.getPic()));
             boolean overwriteGeneratedProfile = !StringUtils.hasLength(checkData.getPic())
                     && NickNameUtil.isGenerated(checkData.getNickName());
             fillWxUserInfo(checkData, wxUserInfo, overwriteGeneratedProfile);
@@ -193,9 +195,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (StringUtils.hasLength(wxUserInfo.getNickname()) && (overwrite || !StringUtils.hasLength(user.getNickName()))) {
             user.setNickName(wxUserInfo.getNickname());
         }
-        if (StringUtils.hasLength(wxUserInfo.getHeadImgUrl()) && (overwrite || !StringUtils.hasLength(user.getPic()))) {
-            user.setPic(wxUserInfo.getHeadImgUrl());
+        String headImgUrl = normalizeWxAvatarUrl(wxUserInfo.getHeadImgUrl());
+        if (StringUtils.hasLength(headImgUrl) && (overwrite || !StringUtils.hasLength(user.getPic()))) {
+            user.setPic(headImgUrl);
         }
+    }
+
+    private String normalizeWxAvatarUrl(String headImgUrl) {
+        if (!StringUtils.hasLength(headImgUrl)) {
+            return headImgUrl;
+        }
+        if (headImgUrl.startsWith("http://")) {
+            return "https://" + headImgUrl.substring("http://".length());
+        }
+        return headImgUrl;
     }
 
     @Override

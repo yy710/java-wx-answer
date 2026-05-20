@@ -19,6 +19,7 @@ import com.yunkesoftware.www.web.service.UserWalletService;
 import jakarta.annotation.Resource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
@@ -60,6 +61,70 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
                     .eq(UserWallet::getUserId, userId)
                     .eq(UserWallet::getType, type));
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public UserWallet rewardIntegral(String userId, String eventId, Integer eventType, BigDecimal rewardAmount) {
+        if (rewardAmount == null || rewardAmount.compareTo(BigDecimal.ZERO) < 1) {
+            throw new YunKeException(ExceptionEnum.FAIL, "奖励积分无效");
+        }
+
+        UserWallet userWallet = baseMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
+                .eq(UserWallet::getUserId, userId)
+                .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
+        if (userWallet == null) {
+            userWallet = new UserWallet();
+            userWallet.setUserId(userId);
+            userWallet.setType(UserWalletTypeEnum.INTEGRAL.getKey());
+            userWallet.setAmount(rewardAmount);
+            userWallet.setVersion(0);
+            try {
+                int insertRow = baseMapper.insert(userWallet);
+                if (insertRow < 1) {
+                    throw new YunKeException(ExceptionEnum.FAIL, "积分入账失败-请刷新重试");
+                }
+                insertWalletRecord(userWallet.getId(), eventId, eventType, rewardAmount, userWallet.getAmount());
+                return userWallet;
+            } catch (DuplicateKeyException ignored) {
+                userWallet = baseMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
+                        .eq(UserWallet::getUserId, userId)
+                        .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
+            }
+        }
+
+        if (userWallet == null) {
+            throw new YunKeException(ExceptionEnum.FAIL, "积分账户异常-请刷新重试");
+        }
+        if (userWallet.getAmount().compareTo(BigDecimal.valueOf(4000)) >= 0) {
+            throw new YunKeException(ExceptionEnum.FAIL, "已达积分上限");
+        }
+
+        BigDecimal afterAmount = userWallet.getAmount().add(rewardAmount);
+        int updateRow = baseMapper.update(new LambdaUpdateWrapper<UserWallet>()
+                .eq(UserWallet::getId, userWallet.getId())
+                .eq(UserWallet::getVersion, userWallet.getVersion())
+                .set(UserWallet::getVersion, userWallet.getVersion() + 1)
+                .set(UserWallet::getAmount, afterAmount));
+        if (updateRow < 1) {
+            throw new YunKeException(ExceptionEnum.FAIL, "积分入账失败-请刷新重试");
+        }
+
+        userWallet.setAmount(afterAmount);
+        userWallet.setVersion(userWallet.getVersion() + 1);
+        insertWalletRecord(userWallet.getId(), eventId, eventType, rewardAmount, afterAmount);
+        return userWallet;
+    }
+
+    private void insertWalletRecord(String walletId, String eventId, Integer eventType, BigDecimal changeAmount, BigDecimal afterAmount) {
+        UserWalletRecord walletRecord = new UserWalletRecord();
+        walletRecord.setWalletId(walletId);
+        walletRecord.setEventId(eventId);
+        walletRecord.setEventType(eventType);
+        walletRecord.setChangeAmount(changeAmount);
+        walletRecord.setAfterAmount(afterAmount);
+        walletRecord.setStatus(true);
+        userWalletRecordMapper.insert(walletRecord);
     }
 
     @Override

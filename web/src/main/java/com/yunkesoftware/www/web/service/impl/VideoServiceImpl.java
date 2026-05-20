@@ -13,11 +13,13 @@ import com.yunkesoftware.www.utils.IpUtils;
 import com.yunkesoftware.www.web.entity.*;
 import com.yunkesoftware.www.web.mapper.*;
 import com.yunkesoftware.www.web.service.TimeLimitService;
+import com.yunkesoftware.www.web.service.UserWalletService;
 import com.yunkesoftware.www.web.service.VideoService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 
 import java.math.BigDecimal;
@@ -55,6 +57,8 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
     private TicketActivityVideoMapper ticketActivityVideoMapper;
     @Resource
     private VideoActivityVideoMapper videoActivityVideoMapper;
+    @Resource
+    private UserWalletService userWalletService;
 
     @Override
     public Page<Video> pageTicket(Video video) {
@@ -201,6 +205,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void doReward(String id, Integer activityType) {
         // 检查时间是否在限制内
         timeLimitService.checkTimeLimit();
@@ -212,9 +217,8 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
                 .eq(UserWallet::getUserId, userId)
                 .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
-        UserWalletRecord walletRecord = new UserWalletRecord();
-        walletRecord.setEventId(id);
         BigDecimal rewardAmount;
+        Integer eventType;
         if (activityType == 1) { //视频活动
             VideoActivity videoActivity = (VideoActivity) redisTemplate.opsForValue().get(RedisKey.VIDEO_ACTIVITY);
             if (videoActivity == null) {
@@ -250,7 +254,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
                     }
                 }
             }
-            walletRecord.setEventType(UserWalletEventEnum.VIDEO.getKey());
+            eventType = UserWalletEventEnum.VIDEO.getKey();
             rewardAmount = videoActivityVideo.getRewardAmount();
         } else { //投票视频获得积分
             TicketActivity ticketActivity = (TicketActivity) redisTemplate.opsForValue().get(RedisKey.TICKET_ACTIVITY);
@@ -275,35 +279,13 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
                     throw new YunKeException(ExceptionEnum.FAIL, "已获得当前视频的积分");
                 }
             }
-            walletRecord.setEventType(UserWalletEventEnum.TICKET_VIDEO.getKey());
+            eventType = UserWalletEventEnum.TICKET_VIDEO.getKey();
             rewardAmount = ticketActivityVideo.getRewardAmount();
         }
         if (rewardAmount.compareTo(BigDecimal.ZERO) < 1) {
             throw new YunKeException(ExceptionEnum.FAIL, "当前视频不可获得积分");
         }
-
-        walletRecord.setChangeAmount(rewardAmount);
-        if (userWallet == null) {
-            // 直接进行奖励赠送即可
-            userWallet = new UserWallet();
-            userWallet.setUserId(userId);
-            userWallet.setType(UserWalletTypeEnum.INTEGRAL.getKey());
-            userWallet.setAmount(rewardAmount);
-            userWallet.setVersion(0);
-            userWalletMapper.insert(userWallet);
-            walletRecord.setAfterAmount(rewardAmount);
-        } else {
-            BigDecimal afterAmount = userWallet.getAmount().add(rewardAmount);
-            int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()
-                    .eq(UserWallet::getId, userWallet.getId())
-                    .eq(UserWallet::getVersion, userWallet.getVersion())
-                    .set(UserWallet::getAmount, afterAmount)
-                    .set(UserWallet::getVersion, userWallet.getVersion() + 1));
-            walletRecord.setStatus(updateRow > 0);
-            walletRecord.setAfterAmount(afterAmount);
-        }
-        walletRecord.setWalletId(userWallet.getId());
-        userWalletRecordMapper.insert(walletRecord);
+        userWalletService.rewardIntegral(userId, id, eventType, rewardAmount);
     }
 
     @Override

@@ -2,20 +2,19 @@ package com.yunkesoftware.www.web.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.IdUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.yunkesoftware.www.enums.UserWalletEventEnum;
-import com.yunkesoftware.www.enums.UserWalletTypeEnum;
 import com.yunkesoftware.www.exception.ExceptionEnum;
 import com.yunkesoftware.www.exception.YunKeException;
 import com.yunkesoftware.www.web.entity.*;
 import com.yunkesoftware.www.web.mapper.*;
 import com.yunkesoftware.www.web.service.TimeLimitService;
 import com.yunkesoftware.www.web.service.TopicRecordSingleService;
+import com.yunkesoftware.www.web.service.UserWalletService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yunkesoftware.www.web.vo.TopicSingleResultVo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
@@ -36,13 +35,12 @@ public class TopicRecordSingleServiceImpl extends ServiceImpl<TopicRecordSingleM
     @Resource
     private TopicMapper topicMapper;
     @Resource
-    private UserWalletMapper userWalletMapper;
-    @Resource
-    private UserWalletRecordMapper userWalletRecordMapper;
-    @Resource
     private TimeLimitService timeLimitService;
+    @Resource
+    private UserWalletService userWalletService;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public TopicSingleResultVo add(TopicRecordSingle recordSingle) {
 
         String userId = StpUtil.getLoginIdAsString();
@@ -101,37 +99,7 @@ public class TopicRecordSingleServiceImpl extends ServiceImpl<TopicRecordSingleM
 //            resultVo.setMsg("只有首次答题可获得积分奖励！");
 //            return resultVo;
 //        }
-        UserWalletRecord walletRecord = new UserWalletRecord();
-        walletRecord.setEventId(id);
-        walletRecord.setEventType(UserWalletEventEnum.SINGLE_TOPIC_REWARD.getKey());
-        walletRecord.setChangeAmount(topic.getRewardAmount());
-        // 赠送用户积分
-        UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
-                .eq(UserWallet::getUserId, userId)
-                .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
-        if (userWallet == null) {
-            userWallet = new UserWallet();
-            userWallet.setUserId(userId);
-            userWallet.setType(UserWalletTypeEnum.INTEGRAL.getKey());
-            userWallet.setAmount(recordSingle.getRewardAmount());
-            int insertRow = userWalletMapper.insert(userWallet);
-            walletRecord.setStatus(insertRow > 0);
-            walletRecord.setAfterAmount(userWallet.getAmount());
-        } else {
-            if (userWallet.getAmount().compareTo(BigDecimal.valueOf(4000)) >= 0) {
-                throw new YunKeException(ExceptionEnum.FAIL, "已达积分上限");
-            }
-            BigDecimal afterAmount = userWallet.getAmount().add(recordSingle.getRewardAmount());
-            int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()
-                    .eq(UserWallet::getId, userWallet.getId())
-                    .eq(UserWallet::getVersion, userWallet.getVersion())
-                    .set(UserWallet::getVersion, userWallet.getVersion() + 1)
-                    .set(UserWallet::getAmount, afterAmount));
-            walletRecord.setStatus(updateRow > 0);
-            walletRecord.setAfterAmount(afterAmount);
-        }
-        walletRecord.setWalletId(userWallet.getId());
-        userWalletRecordMapper.insert(walletRecord);
+        userWalletService.rewardIntegral(userId, id, UserWalletEventEnum.SINGLE_TOPIC_REWARD.getKey(), topic.getRewardAmount());
         resultVo.setRewardAmount(topic.getRewardAmount());
         return resultVo;
     }
