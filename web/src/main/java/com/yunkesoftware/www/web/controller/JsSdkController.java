@@ -9,6 +9,7 @@ import jakarta.annotation.Resource;
 import me.chanjar.weixin.common.bean.WxJsapiSignature;
 import me.chanjar.weixin.common.error.WxErrorException;
 import me.chanjar.weixin.mp.api.WxMpService;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -36,7 +37,14 @@ public class JsSdkController {
 
     @Operation(summary = "获取签名")
     @PostMapping("/create")
-    public CommonResult<Object> JsapiSignature(@RequestBody CreateSignQuery query) throws WxErrorException {
+    public CommonResult<Object> JsapiSignature(@RequestBody CreateSignQuery query,
+                                               @RequestParam(defaultValue = "false") boolean forceRefresh) throws WxErrorException {
+        if (query == null || !StringUtils.hasText(query.getUrl())) {
+            return CommonResult.validateFailed("签名地址不能为空");
+        }
+        if (forceRefresh) {
+            wxMpService.getJsapiTicket(true);
+        }
         WxJsapiSignature jsapiSignature = wxMpService.createJsapiSignature(query.getUrl());
         return CommonResult.success(jsapiSignature);
     }

@@ -15,9 +15,9 @@ wx:
     configs:
       - appId:   # 小程序微信公众平台appId
         secret:   # 小程序微信公众平台api秘钥
-        token: 
-        aesKey: 
-        msgDataFormat: JSON
+        token:  #微信小程序消息服务器配置的token
+        aesKey:  #微信小程序消息服务器配置的EncodingAESKey
+        msgDataFormat: XML
 
 upload:
   uploadType: cos
