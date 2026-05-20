@@ -69,10 +69,12 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
 
         String userId = StpUtil.getLoginIdAsString();
 
-        // 首次答题才能获得积分
-        TopicRecord checkData = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
+        // 当前线路已成功获得过积分才不再重复奖励；历史 0 分记录不阻止后续正确答题入账。
+        TopicRecord rewardedRecord = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
                 .eq(TopicRecord::getTopicLineId, topicLine.getId())
                 .eq(TopicRecord::getUserId, userId)
+                .gt(TopicRecord::getRewardAmount, BigDecimal.ZERO)
+                .select(TopicRecord::getId)
                 .last("LIMIT 1"));
 
         BigDecimal rewardAmount = BigDecimal.ZERO;// 奖励积分数
@@ -118,7 +120,7 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
                         && Boolean.TRUE.equals(checkItem.getAnswerFlag())) {
                     rightNum++;
                     answerFlag = true;
-                    if (checkData == null) { //第一次答题获得奖励
+                    if (rewardedRecord == null) {
                         rewardAmount = rewardAmount.add(topic.getRewardAmount());
                     }
                 }

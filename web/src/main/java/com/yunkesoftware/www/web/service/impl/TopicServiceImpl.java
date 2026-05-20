@@ -16,6 +16,7 @@ import com.yunkesoftware.www.web.vo.TopicLineDataVo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 /**
@@ -66,13 +67,15 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             buildTopicItemList(topic);
         }
         topicLineDataVo.setTopicList(topicList);
-        // 判断用户当前地图是否是首次答题
-        TopicRecord checkTopicRecord = topicRecordMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
+        // 判断用户当前地图是否已经成功获得过积分，历史 0 分记录不影响后续得分。
+        TopicRecord rewardedRecord = topicRecordMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
                 .eq(TopicRecord::getUserId, userId)
                 .eq(TopicRecord::getTopicLineId, topicLine.getId())
+                .gt(TopicRecord::getRewardAmount, BigDecimal.ZERO)
+                .select(TopicRecord::getId)
                 .last("LIMIT 1"));
         // 时间是否符合条件
-        topicLineDataVo.setFirstFlag(checkTopicRecord == null);
+        topicLineDataVo.setFirstFlag(rewardedRecord == null);
         topicLineDataVo.setTimeFlag(true);
         return topicLineDataVo;
     }
