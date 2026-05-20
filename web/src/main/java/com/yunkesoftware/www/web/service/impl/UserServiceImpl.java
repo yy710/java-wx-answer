@@ -26,7 +26,7 @@ import com.yunkesoftware.www.web.vo.LoginVo;
 import com.yunkesoftware.www.web.vo.UserVo;
 import jakarta.annotation.Resource;
 import me.chanjar.weixin.common.bean.oauth2.WxOAuth2AccessToken;
-import me.chanjar.weixin.common.bean.oauth2.WxOAuth2UserInfo;
+import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
 import me.chanjar.weixin.common.error.WxErrorException;
 import me.chanjar.weixin.common.service.WxOAuth2Service;
 import me.chanjar.weixin.mp.api.WxMpService;
