@@ -68,7 +68,7 @@ DB_CONFIG = {
     "cursorclass": pymysql.cursors.Cursor,
 }
 
-DEFAULT_REWARD_AMOUNT = "1.00"
+DEFAULT_REWARD_AMOUNT = "10.00"
 BACKUP_DIR = BASE_DIR / "answer_backup"
 _LAST_ID = int(time.time() * 1_000_000)
 
