@@ -13,17 +13,17 @@ logging:
 wx:
   mp:
     configs:
-      - appId:   # 小程序微信公众平台appId
-        secret:   # 小程序微信公众平台api秘钥
-        token:  #微信小程序消息服务器配置的token
-        aesKey:  #微信小程序消息服务器配置的EncodingAESKey
+      - appId: ${WX_MP_APP_ID:}  # 小程序微信公众平台appId
+        secret: ${WX_MP_SECRET:}  # 小程序微信公众平台api秘钥
+        token: ${WX_MP_TOKEN:} #微信小程序消息服务器配置的token
+        aesKey: ${WX_MP_AES_KEY:} #微信小程序消息服务器配置的EncodingAESKey
         msgDataFormat: XML
 
 upload:
   uploadType: cos
-  serverUrl: 
-  accessKey: 
-  secretKey: 
-  bucket: 
-  region: 
+  serverUrl: ${UPLOAD_SERVER_URL:}
+  accessKey: ${TENCENT_COS_ACCESS_KEY:}
+  secretKey: ${TENCENT_COS_SECRET_KEY:}
+  bucket: ${TENCENT_COS_BUCKET:}
+  region: ${TENCENT_COS_REGION:}
   post: ?x-oss-process=video/snapshot,t_1,m_fast
