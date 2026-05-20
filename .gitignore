@@ -36,3 +36,7 @@ out/
 ### VS Code ###
 .vscode/
 **/build
+
+### Local deployment config ###
+adm/src/main/resources/application.yml
+web/src/main/resources/application.yml
