@@ -30,7 +30,7 @@ DB_HOST = os.getenv("CITYWALK_DB_HOST", os.getenv("DB_HOST", "127.0.0.1"))
 DB_PORT = int(os.getenv("CITYWALK_DB_PORT", os.getenv("DB_PORT", "3306")))
 DB_NAME = os.getenv("CITYWALK_DB_NAME", os.getenv("DB_NAME", "city-walk"))
 DB_USER = os.getenv("CITYWALK_DB_USER", os.getenv("DB_USER", "city-walk"))
-DB_PASSWORD = os.getenv("CITYWALK_DB_PASSWORD", os.getenv("DB_PASSWORD", ""))
+DB_PASSWORD = os.getenv("CITYWALK_DB_PASSWORD", os.getenv("DB_PASSWORD", "KaTmAjEJxynhFh7S"))
 
 CSV_COLUMNS = [
     "id",
