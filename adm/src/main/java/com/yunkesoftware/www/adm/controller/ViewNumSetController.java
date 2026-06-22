@@ -2,8 +2,8 @@ package com.yunkesoftware.www.adm.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yunkesoftware.www.adm.vo.ViewNumVo;
-import com.yunkesoftware.www.constant.RedisKey;
 import com.yunkesoftware.www.result.CommonResult;
+import com.yunkesoftware.www.utils.ViewNumUtils;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -25,17 +25,25 @@ public class ViewNumSetController {
     public CommonResult<Page<ViewNumVo>> page() {
         Page<ViewNumVo> pageResult = new Page<>();
         List<ViewNumVo> recordList = new ArrayList<>();
-        Integer viewNum = (Integer) redisTemplate.opsForValue().get(RedisKey.USER_VIEW_NUM);
         ViewNumVo viewNumVo = new ViewNumVo();
-        viewNumVo.setViewNum(viewNum);
+        Integer realViewNum = ViewNumUtils.getRealViewNum(redisTemplate);
+        Integer viewMultiple = ViewNumUtils.getViewMultiple(redisTemplate);
+        Integer randomMax = ViewNumUtils.getRandomMax(redisTemplate);
+        Integer displayViewNum = ViewNumUtils.calculateDisplayViewNum(realViewNum, viewMultiple, randomMax);
+        viewNumVo.setRealViewNum(realViewNum);
+        viewNumVo.setViewNum(displayViewNum);
+        viewNumVo.setDisplayViewNum(displayViewNum);
+        viewNumVo.setViewMultiple(viewMultiple);
+        viewNumVo.setRandomMax(randomMax);
         recordList.add(viewNumVo);
         pageResult.setRecords(recordList);
+        pageResult.setTotal(1);
         return CommonResult.success(pageResult);
     }
 
     @PostMapping("/addOrModify")
     public CommonResult<Object> addOrModify(@Valid @RequestBody ViewNumVo viewNumVo) {
-        redisTemplate.opsForValue().set(RedisKey.USER_VIEW_NUM, viewNumVo.getViewNum());
+        ViewNumUtils.saveDisplayConfig(redisTemplate, viewNumVo.getViewMultiple(), viewNumVo.getRandomMax());
         return CommonResult.success();
     }
 }

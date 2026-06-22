@@ -9,6 +9,8 @@ public class RedisKey {
     public static final String VIDEO_ACTIVITY = "video:activity";
     //    public static final String SIGN_ACTIVITY = "sign:activity";
     public static final String USER_VIEW_NUM = "user:viewNum";
+    public static final String USER_VIEW_NUM_MULTIPLE = "user:viewNum:multiple";
+    public static final String USER_VIEW_NUM_RANDOM_MAX = "user:viewNum:randomMax";
     public static final String WX_SIGNATURE = "wx:signature";
     public static final String SIGN_ACTIVITY = "sign:activity";
     public static final String INDEX_ANALYSIS = "index:analysis";

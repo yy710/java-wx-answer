@@ -7,12 +7,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
-import com.yunkesoftware.www.constant.RedisKey;
 import com.yunkesoftware.www.enums.UserWalletEventEnum;
 import com.yunkesoftware.www.enums.UserWalletTypeEnum;
 import com.yunkesoftware.www.exception.ExceptionEnum;
 import com.yunkesoftware.www.exception.YunKeException;
 import com.yunkesoftware.www.utils.NickNameUtil;
+import com.yunkesoftware.www.utils.ViewNumUtils;
 import com.yunkesoftware.www.web.entity.InviteSet;
 import com.yunkesoftware.www.web.entity.User;
 import com.yunkesoftware.www.web.entity.UserWallet;
@@ -213,23 +213,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public void addViewNum() {
-        Integer viewNum = (Integer) redisTemplate.opsForValue().get(RedisKey.USER_VIEW_NUM);
-        if (viewNum == null) {
-            viewNum = 71940;
-            redisTemplate.opsForValue().set(RedisKey.USER_VIEW_NUM, viewNum);
-        } else {
-            redisTemplate.opsForValue().increment(RedisKey.USER_VIEW_NUM);
-        }
-
+        ViewNumUtils.incrementRealViewNum(redisTemplate);
     }
 
     @Override
     public Integer getViewNum() {
-        Integer viewNum = (Integer) redisTemplate.opsForValue().get(RedisKey.USER_VIEW_NUM);
-        if (viewNum != null) {
-            return viewNum;
-        }
-        return 1;
+        return ViewNumUtils.getDisplayViewNum(redisTemplate);
     }
 
 }
