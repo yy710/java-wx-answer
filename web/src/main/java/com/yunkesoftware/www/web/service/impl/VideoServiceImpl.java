@@ -60,20 +60,42 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
     @Resource
     private UserWalletService userWalletService;
 
-    @Override
-    public Page<Video> pageTicket(Video video) {
-        Page<Video> pageParam = new Page<>(video.getPageNum(), video.getPageSize());
+    private VideoActivity getOpenVideoActivity() {
+        VideoActivity videoActivity = (VideoActivity) redisTemplate.opsForValue().get(RedisKey.VIDEO_ACTIVITY);
+        if (videoActivity == null) {
+            LocalDateTime nowTime = LocalDateTime.now();
+            videoActivity = videoActivityMapper.selectOne(new LambdaQueryWrapper<VideoActivity>()
+                    .le(VideoActivity::getStartTime, nowTime)
+                    .gt(VideoActivity::getEndTime, nowTime));
+            if (videoActivity != null) {
+                long seconds = Math.max(Duration.between(nowTime, videoActivity.getEndTime()).getSeconds(), 1);
+                redisTemplate.opsForValue().set(RedisKey.VIDEO_ACTIVITY, videoActivity, seconds, TimeUnit.SECONDS);
+            }
+        }
+        return videoActivity;
+    }
+
+    private TicketActivity getOpenTicketActivity() {
         TicketActivity ticketActivity = (TicketActivity) redisTemplate.opsForValue().get(RedisKey.TICKET_ACTIVITY);
         if (ticketActivity == null) {
             LocalDateTime nowTime = LocalDateTime.now();
             ticketActivity = ticketActivityMapper.selectOne(new LambdaQueryWrapper<TicketActivity>()
                     .le(TicketActivity::getStartTime, nowTime)
                     .gt(TicketActivity::getEndTime, nowTime));
-            if (ticketActivity == null) {
-                return pageParam;
+            if (ticketActivity != null) {
+                long seconds = Math.max(Duration.between(nowTime, ticketActivity.getEndTime()).getSeconds(), 1);
+                redisTemplate.opsForValue().set(RedisKey.TICKET_ACTIVITY, ticketActivity, seconds, TimeUnit.SECONDS);
             }
-            Duration duration = Duration.between(nowTime, ticketActivity.getEndTime());
-            redisTemplate.opsForValue().set(RedisKey.TICKET_ACTIVITY, ticketActivity, duration.getSeconds(), TimeUnit.SECONDS);
+        }
+        return ticketActivity;
+    }
+
+    @Override
+    public Page<Video> pageTicket(Video video) {
+        Page<Video> pageParam = new Page<>(video.getPageNum(), video.getPageSize());
+        TicketActivity ticketActivity = getOpenTicketActivity();
+        if (ticketActivity == null) {
+            return pageParam;
         }
         video.setActivityId(ticketActivity.getId());
         Page<Video> pageResult = ticketActivityVideoMapper.pageByQuery(pageParam, video);
@@ -112,17 +134,9 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
     @Override
     public Page<Video> pageIntegral(Video video) {
         Page<Video> pageParam = new Page<>(video.getPageNum(), video.getPageSize());
-        VideoActivity videoActivity = (VideoActivity) redisTemplate.opsForValue().get(RedisKey.VIDEO_ACTIVITY);
+        VideoActivity videoActivity = getOpenVideoActivity();
         if (videoActivity == null) {
-            LocalDateTime nowTime = LocalDateTime.now();
-            videoActivity = videoActivityMapper.selectOne(new LambdaQueryWrapper<VideoActivity>()
-                    .le(VideoActivity::getStartTime, nowTime)
-                    .gt(VideoActivity::getEndTime, nowTime));
-            if (videoActivity == null) {
-                return pageParam;
-            }
-            Duration duration = Duration.between(nowTime, videoActivity.getEndTime());
-            redisTemplate.opsForValue().set(RedisKey.VIDEO_ACTIVITY, videoActivity, duration.getSeconds(), TimeUnit.SECONDS);
+            return pageParam;
         }
         video.setActivityId(videoActivity.getId());
         Page<Video> pageResult = videoActivityVideoMapper.pageByQuery(pageParam, video);
@@ -155,7 +169,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         }
         LocalDateTime nowTime = LocalDateTime.now();
 
-        TicketActivity ticketActivity = (TicketActivity) redisTemplate.opsForValue().get(RedisKey.TICKET_ACTIVITY);
+        TicketActivity ticketActivity = getOpenTicketActivity();
         if (ticketActivity == null) {
             throw new YunKeException(ExceptionEnum.FAIL, "无进行中的投票活动-请刷新页面^_^");
         }
@@ -220,7 +234,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         BigDecimal rewardAmount;
         Integer eventType;
         if (activityType == 1) { //视频活动
-            VideoActivity videoActivity = (VideoActivity) redisTemplate.opsForValue().get(RedisKey.VIDEO_ACTIVITY);
+            VideoActivity videoActivity = getOpenVideoActivity();
             if (videoActivity == null) {
                 throw new YunKeException(ExceptionEnum.FAIL, "无进行中的视频奖励积分活动-请刷新页面重试");
             }
@@ -257,7 +271,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
             eventType = UserWalletEventEnum.VIDEO.getKey();
             rewardAmount = videoActivityVideo.getRewardAmount();
         } else { //投票视频获得积分
-            TicketActivity ticketActivity = (TicketActivity) redisTemplate.opsForValue().get(RedisKey.TICKET_ACTIVITY);
+            TicketActivity ticketActivity = getOpenTicketActivity();
             if (ticketActivity == null) {
                 throw new YunKeException(ExceptionEnum.FAIL, "无进行中的投票活动-请刷新页面重试");
             }
@@ -293,7 +307,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         Video video = baseMapper.selectById(id);
         if (video != null) {
             if (activityType == 2) { //投票的视频详情
-                TicketActivity ticketActivity = (TicketActivity) redisTemplate.opsForValue().get(RedisKey.TICKET_ACTIVITY);
+                TicketActivity ticketActivity = getOpenTicketActivity();
                 if (ticketActivity != null) {
                     TicketActivityVideo ticketActivityVideo = ticketActivityVideoMapper.selectOne(new LambdaQueryWrapper<TicketActivityVideo>()
                             .eq(TicketActivityVideo::getVideoId, id)
@@ -304,7 +318,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
                     }
                 }
             } else {
-                VideoActivity videoActivity = (VideoActivity) redisTemplate.opsForValue().get(RedisKey.VIDEO_ACTIVITY);
+                VideoActivity videoActivity = getOpenVideoActivity();
                 if (videoActivity != null) {
                     VideoActivityVideo videoActivityVideo = videoActivityVideoMapper.selectOne(new LambdaQueryWrapper<VideoActivityVideo>()
                             .eq(VideoActivityVideo::getVideoId, id)
@@ -316,7 +330,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
                 }
             }
 
-            if (video.getRewardAmount().compareTo(BigDecimal.ZERO) > 0) {
+            if (video.getRewardAmount() != null && video.getRewardAmount().compareTo(BigDecimal.ZERO) > 0) {
                 String userId = StpUtil.getLoginIdAsString();
                 UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
                         .eq(UserWallet::getUserId, userId)

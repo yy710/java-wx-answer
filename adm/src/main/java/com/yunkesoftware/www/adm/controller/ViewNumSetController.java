@@ -18,6 +18,7 @@ import com.yunkesoftware.www.adm.mapper.UserWalletRecordMapper;
 import com.yunkesoftware.www.adm.mapper.VideoActivityMapper;
 import com.yunkesoftware.www.adm.vo.ViewNumVo;
 import com.yunkesoftware.www.constant.RedisKey;
+import com.yunkesoftware.www.entity.IntroduceSet;
 import com.yunkesoftware.www.enums.UserWalletTypeEnum;
 import com.yunkesoftware.www.exception.ExceptionEnum;
 import com.yunkesoftware.www.exception.YunKeException;
@@ -121,12 +122,17 @@ public class ViewNumSetController {
                 RedisKey.TOPIC_ACTIVITY,
                 RedisKey.VIDEO_ACTIVITY
         ));
+        IntroduceSet introduceSet = new IntroduceSet();
+        introduceSet.setStartTime(request.getStartTime());
+        introduceSet.setEndTime(request.getEndTime());
+        redisTemplate.opsForValue().set(RedisKey.INTRODUCE_SET, introduceSet);
 
         Map<String, Integer> result = new HashMap<>();
         result.put("signActivity", signCount);
         result.put("ticketActivity", ticketCount);
         result.put("topicActivity", topicCount);
         result.put("videoActivity", videoCount);
+        result.put("introduceSet", 1);
         return CommonResult.success(result);
     }
 
