@@ -1,0 +1,32 @@
+spring:
+  servlet:
+    multipart:
+      max-request-size: 50MB
+      max-file-size: 50MB
+  profiles:
+    active: prod
+logging:
+  level:
+    root: info
+    org.springframework.web: info
+    cn.binarywang.wx.miniapp: debug
+wx:
+  mp:
+    configs:
+      - appId: wxccfcbda4dcfd1b5c  # 小程序微信公众平台appId
+        secret: e5fb17975f27758826ef7b15c190c513  # 小程序微信公众平台api秘钥
+        token: #微信小程序消息服务器配置的token
+        aesKey: #微信小程序消息服务器配置的EncodingAESKey
+        msgDataFormat: JSON
+
+cache:
+  type: memory
+
+upload:
+  uploadType: cos
+  serverUrl: https://city-walk-1403847979.cos.ap-guangzhou.myqcloud.com
+  accessKey: AKIDymbDblgPuBDD9zjZKxOflfNuLZZhgRzJ
+  secretKey: 50kJApMhsrdYSE0jMuKfrwoSsOiogLBr
+  bucket: city-walk-1403847979
+  region: ap-guangzhou
+  post: ?x-oss-process=video/snapshot,t_1,m_fast
