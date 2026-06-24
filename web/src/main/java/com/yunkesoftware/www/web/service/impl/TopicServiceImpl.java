@@ -6,6 +6,7 @@ import com.yunkesoftware.www.exception.ExceptionEnum;
 import com.yunkesoftware.www.exception.YunKeException;
 
 import com.yunkesoftware.www.web.entity.Topic;
+import com.yunkesoftware.www.web.entity.TopicActivity;
 import com.yunkesoftware.www.web.entity.TopicItem;
 import com.yunkesoftware.www.web.entity.TopicLine;
 import com.yunkesoftware.www.web.entity.TopicRecord;
@@ -17,6 +18,7 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -39,6 +41,8 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     private TopicRecordMapper topicRecordMapper;
     @Resource
     private TopicRecordTopicMapper topicRecordTopicMapper;
+    @Resource
+    private TopicActivityMapper topicActivityMapper;
 
     @Override
     public TopicLineDataVo listByQuery(String topicLineId) {
@@ -48,6 +52,10 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         }
         if (topicLine.getTopicNum() == null || topicLine.getTopicNum() <= 0) {
             throw new YunKeException(ExceptionEnum.FAIL, "当前地图活动不支持答题-请联系管理人员配置");
+        }
+        TopicActivity topicActivity = topicActivityMapper.selectById(topicLine.getTopicActivityId());
+        if (topicActivity == null) {
+            throw new YunKeException(ExceptionEnum.FAIL, "当前活动不存在-请刷新页面重试");
         }
 
         TopicLineDataVo topicLineDataVo = new TopicLineDataVo();
@@ -67,17 +75,32 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             buildTopicItemList(topic);
         }
         topicLineDataVo.setTopicList(topicList);
-        // 判断用户当前地图是否已经成功获得过积分，历史 0 分记录不影响后续得分。
-        TopicRecord rewardedRecord = topicRecordMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
+        boolean timeFlag = isTopicActivityTime(topicActivity);
+        // 判断用户在当前答题活动窗口内是否已经成功获得过积分，历史活动和历史 0 分记录不影响后续得分。
+        LambdaQueryWrapper<TopicRecord> rewardQuery = new LambdaQueryWrapper<TopicRecord>()
                 .eq(TopicRecord::getUserId, userId)
                 .eq(TopicRecord::getTopicLineId, topicLine.getId())
+                .eq(TopicRecord::getTopicActivityId, topicActivity.getId())
                 .gt(TopicRecord::getRewardAmount, BigDecimal.ZERO)
                 .select(TopicRecord::getId)
-                .last("LIMIT 1"));
+                .last("LIMIT 1");
+        if (topicActivity.getStartTime() != null && topicActivity.getEndTime() != null) {
+            rewardQuery.ge(TopicRecord::getCreateTime, topicActivity.getStartTime())
+                    .le(TopicRecord::getCreateTime, topicActivity.getEndTime());
+        }
+        TopicRecord rewardedRecord = topicRecordMapper.selectOne(rewardQuery);
         // 时间是否符合条件
         topicLineDataVo.setFirstFlag(rewardedRecord == null);
-        topicLineDataVo.setTimeFlag(true);
+        topicLineDataVo.setTimeFlag(timeFlag);
         return topicLineDataVo;
+    }
+
+    private boolean isTopicActivityTime(TopicActivity topicActivity) {
+        if (topicActivity.getStartTime() == null || topicActivity.getEndTime() == null) {
+            return false;
+        }
+        LocalDateTime nowTime = LocalDateTime.now();
+        return !nowTime.isBefore(topicActivity.getStartTime()) && !nowTime.isAfter(topicActivity.getEndTime());
     }
 
     @Override

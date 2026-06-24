@@ -84,8 +84,11 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
         // 当前线路已成功获得过积分才不再重复奖励；历史 0 分记录不阻止后续正确答题入账。
         TopicRecord rewardedRecord = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecord>()
                 .eq(TopicRecord::getTopicLineId, topicLine.getId())
+                .eq(TopicRecord::getTopicActivityId, topicActivity.getId())
                 .eq(TopicRecord::getUserId, userId)
                 .gt(TopicRecord::getRewardAmount, BigDecimal.ZERO)
+                .ge(TopicRecord::getCreateTime, topicActivity.getStartTime())
+                .le(TopicRecord::getCreateTime, topicActivity.getEndTime())
                 .select(TopicRecord::getId)
                 .last("LIMIT 1"));
 
