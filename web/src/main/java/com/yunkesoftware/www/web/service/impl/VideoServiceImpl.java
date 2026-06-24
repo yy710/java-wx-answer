@@ -12,7 +12,6 @@ import com.yunkesoftware.www.exception.YunKeException;
 import com.yunkesoftware.www.utils.IpUtils;
 import com.yunkesoftware.www.web.entity.*;
 import com.yunkesoftware.www.web.mapper.*;
-import com.yunkesoftware.www.web.service.TimeLimitService;
 import com.yunkesoftware.www.web.service.UserWalletService;
 import com.yunkesoftware.www.web.service.VideoService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -51,8 +50,6 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
     private RedisTemplate<String, Object> redisTemplate;
     @Resource
     private VideoActivityMapper videoActivityMapper;
-    @Resource
-    private TimeLimitService timeLimitService;
     @Resource
     private TicketActivityVideoMapper ticketActivityVideoMapper;
     @Resource
@@ -221,8 +218,6 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void doReward(String id, Integer activityType) {
-        // 检查时间是否在限制内
-        timeLimitService.checkTimeLimit();
         Video video = baseMapper.selectById(id);
         if (video == null || !video.getStatus()) {
             throw new YunKeException(ExceptionEnum.FAIL, "视频不存在或已下架-请刷新页面重试");
