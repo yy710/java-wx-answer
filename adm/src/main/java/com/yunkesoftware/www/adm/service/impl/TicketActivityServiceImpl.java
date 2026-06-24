@@ -40,15 +40,15 @@ public class TicketActivityServiceImpl extends ServiceImpl<TicketActivityMapper,
 
     @Override
     public void addOrModify(TicketActivity ticketActivity) {
-        if (ticketActivity.getEndTime().isBefore(ticketActivity.getStartTime())) {
-            throw new YunKeException(ExceptionEnum.FAIL, "结束时间不能早于开始时间");
+        if (!ticketActivity.getEndTime().isAfter(ticketActivity.getStartTime())) {
+            throw new YunKeException(ExceptionEnum.FAIL, "结束时间必须晚于开始时间");
         }
-        if (ticketActivity.getStartTicketTime().isAfter(ticketActivity.getEndTicketTime())) {
-            throw new YunKeException(ExceptionEnum.FAIL, "投票开始时间不能晚于投票结束时间");
+        if (!ticketActivity.getEndTicketTime().isAfter(ticketActivity.getStartTicketTime())) {
+            throw new YunKeException(ExceptionEnum.FAIL, "投票结束时间必须晚于投票开始时间");
         }
         LocalDateTime nowTime = LocalDateTime.now();
         if (!ticketActivity.getEndTime().isAfter(nowTime)) {
-            throw new YunKeException(ExceptionEnum.FAIL, "结束时间不能早于当前时间");
+            throw new YunKeException(ExceptionEnum.FAIL, "结束时间必须晚于当前时间");
         }
         if (ticketActivity.getStartTicketTime().isBefore(ticketActivity.getStartTime())) {
             throw new YunKeException(ExceptionEnum.FAIL, "投票开始时间不能早于开始时间");
@@ -71,13 +71,13 @@ public class TicketActivityServiceImpl extends ServiceImpl<TicketActivityMapper,
             ticketActivity.setTicketTotal(null);
             ticketActivity.setViewNum(null);
             baseMapper.updateById(ticketActivity);
-            redisTemplate.delete(RedisKey.TICKET_ACTIVITY);
         } else {
             ticketActivity.setTicketUserNum(0);
             ticketActivity.setTicketTotal(0);
             ticketActivity.setViewNum(0);
             baseMapper.insert(ticketActivity);
         }
+        redisTemplate.delete(RedisKey.TICKET_ACTIVITY);
     }
 
     @Override

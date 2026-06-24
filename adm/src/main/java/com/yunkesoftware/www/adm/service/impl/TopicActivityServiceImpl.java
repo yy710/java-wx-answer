@@ -31,12 +31,12 @@ public class TopicActivityServiceImpl extends ServiceImpl<TopicActivityMapper, T
 
     @Override
     public void addOrModify(TopicActivity topicActivity) {
-        if (topicActivity.getEndTime().isBefore(topicActivity.getStartTime())) {
-            throw new YunKeException(ExceptionEnum.FAIL, "结束时间不能早于开始时间");
+        if (!topicActivity.getEndTime().isAfter(topicActivity.getStartTime())) {
+            throw new YunKeException(ExceptionEnum.FAIL, "结束时间必须晚于开始时间");
         }
         LocalDateTime nowTime = LocalDateTime.now();
-        if (nowTime.isAfter(topicActivity.getEndTime())) {
-            throw new YunKeException(ExceptionEnum.FAIL, "结束时间不能早于当前时间");
+        if (!topicActivity.getEndTime().isAfter(nowTime)) {
+            throw new YunKeException(ExceptionEnum.FAIL, "结束时间必须晚于当前时间");
         }
         // 开始时间-结束时间不能和其他数据有重叠
         TopicActivity checkData = baseMapper.selectOne(new LambdaQueryWrapper<TopicActivity>()

@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yunkesoftware.www.adm.annotation.EasyExcelExport;
 import com.yunkesoftware.www.constant.RedisKey;
 import com.yunkesoftware.www.entity.IntroduceSet;
+import com.yunkesoftware.www.exception.ExceptionEnum;
+import com.yunkesoftware.www.exception.YunKeException;
 import com.yunkesoftware.www.query.PageCurrency;
 import com.yunkesoftware.www.result.CommonResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,6 +47,12 @@ public class IntroduceSetController {
     @Operation(summary = "添加或修改")
     @PostMapping("/addOrModify")
     public CommonResult<Boolean> addOrModify(@RequestBody IntroduceSet introduceSet) {
+        if (introduceSet.getStartTime() == null || introduceSet.getEndTime() == null) {
+            throw new YunKeException(ExceptionEnum.FAIL, "请选择开始时间和结束时间");
+        }
+        if (!introduceSet.getEndTime().isAfter(introduceSet.getStartTime())) {
+            throw new YunKeException(ExceptionEnum.FAIL, "结束时间必须晚于开始时间");
+        }
         redisTemplate.opsForValue().set(RedisKey.INTRODUCE_SET, introduceSet);
         return CommonResult.success();
     }

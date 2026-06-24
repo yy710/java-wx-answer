@@ -33,8 +33,7 @@ public class TicketActivityServiceImpl extends ServiceImpl<TicketActivityMapper,
     @Resource
     private TicketRecordMapper ticketRecordMapper;
 
-    @Override
-    public TicketActivity getOpen() {
+    private TicketActivity getOpenTicketActivity() {
         TicketActivity ticketActivity = (TicketActivity) redisTemplate.opsForValue().get(RedisKey.TICKET_ACTIVITY);
         if (ticketActivity == null) {
             LocalDateTime nowTime = LocalDateTime.now();
@@ -48,33 +47,43 @@ public class TicketActivityServiceImpl extends ServiceImpl<TicketActivityMapper,
                             TicketActivity::getTicketMultiple, TicketActivity::getViewMultiple, TicketActivity::getDescr));
 
             if (ticketActivity != null) {
-                if (nowTime.isAfter(ticketActivity.getEndTicketTime())) {
-                    // 获取用户投票次数
-                    Long myTicketNum = ticketRecordMapper.selectCount(new LambdaQueryWrapper<TicketRecord>()
-                            .eq(TicketRecord::getTicketActivityId, ticketActivity.getId())
-                            .eq(TicketRecord::getUserId, StpUtil.getLoginIdAsString()));
-                    ticketActivity.setMyTicketNum(myTicketNum);
-                    // 计算投票人数+总票数+浏览量
-                    ticketActivity.setTicketTotal(ticketActivity.getTicketTotal() * ticketActivity.getTicketMultiple());
-                    ticketActivity.setTicketUserNum(ticketActivity.getTicketUserNum() * ticketActivity.getTicketUserMultiple());
-                    ticketActivity.setViewNum(ticketActivity.getViewNum() * ticketActivity.getViewMultiple());
-                    ticketActivity.setFinishFlag(true);
-                } else {
-                    // 活动结束时间与当前时间的秒数秒数差
-                    Duration duration = Duration.between(nowTime, ticketActivity.getEndTime());
-                    long seconds = duration.getSeconds();
-                    // 添加redis缓存
-                    redisTemplate.opsForValue().set(RedisKey.TICKET_ACTIVITY, ticketActivity, seconds, TimeUnit.SECONDS);
-                }
+                long seconds = Math.max(Duration.between(nowTime, ticketActivity.getEndTime()).getSeconds(), 1);
+                redisTemplate.opsForValue().set(RedisKey.TICKET_ACTIVITY, ticketActivity, seconds, TimeUnit.SECONDS);
             }
         }
+        return ticketActivity;
+    }
 
+    private int multiply(Integer value, Integer multiple) {
+        return (value == null ? 0 : value) * (multiple == null ? 1 : multiple);
+    }
+
+    private void fillFinishedTicketActivity(TicketActivity ticketActivity) {
+        if (ticketActivity.getEndTicketTime() == null || !LocalDateTime.now().isAfter(ticketActivity.getEndTicketTime())) {
+            return;
+        }
+        Long myTicketNum = ticketRecordMapper.selectCount(new LambdaQueryWrapper<TicketRecord>()
+                .eq(TicketRecord::getTicketActivityId, ticketActivity.getId())
+                .eq(TicketRecord::getUserId, StpUtil.getLoginIdAsString()));
+        ticketActivity.setMyTicketNum(myTicketNum);
+        ticketActivity.setTicketTotal(multiply(ticketActivity.getTicketTotal(), ticketActivity.getTicketMultiple()));
+        ticketActivity.setTicketUserNum(multiply(ticketActivity.getTicketUserNum(), ticketActivity.getTicketUserMultiple()));
+        ticketActivity.setViewNum(multiply(ticketActivity.getViewNum(), ticketActivity.getViewMultiple()));
+        ticketActivity.setFinishFlag(true);
+    }
+
+    @Override
+    public TicketActivity getOpen() {
+        TicketActivity ticketActivity = getOpenTicketActivity();
+        if (ticketActivity != null) {
+            fillFinishedTicketActivity(ticketActivity);
+        }
         return ticketActivity;
     }
 
     @Override
     public Integer surplusTicket() {
-        TicketActivity ticketActivity = (TicketActivity) redisTemplate.opsForValue().get(RedisKey.TICKET_ACTIVITY);
+        TicketActivity ticketActivity = getOpenTicketActivity();
         if (ticketActivity != null) {
             Long myTicketNum = ticketRecordMapper.selectCount(new LambdaQueryWrapper<TicketRecord>()
                     .eq(TicketRecord::getTicketActivityId, ticketActivity.getId())

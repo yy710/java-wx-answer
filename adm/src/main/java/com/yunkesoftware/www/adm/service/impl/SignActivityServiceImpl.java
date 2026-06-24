@@ -31,12 +31,12 @@ public class SignActivityServiceImpl extends ServiceImpl<SignActivityMapper, Sig
 
     @Override
     public void addOrModify(SignActivity signActivity) {
-        if (signActivity.getEndTime().isBefore(signActivity.getStartTime())) {
-            throw new YunKeException(ExceptionEnum.FAIL, "结束时间不能早于开始时间");
+        if (!signActivity.getEndTime().isAfter(signActivity.getStartTime())) {
+            throw new YunKeException(ExceptionEnum.FAIL, "结束时间必须晚于开始时间");
         }
         LocalDateTime nowTime = LocalDateTime.now();
-        if (signActivity.getEndTime().isBefore(nowTime)) {
-            throw new YunKeException(ExceptionEnum.FAIL, "结束时间不能早于当前时间");
+        if (!signActivity.getEndTime().isAfter(nowTime)) {
+            throw new YunKeException(ExceptionEnum.FAIL, "结束时间必须晚于当前时间");
         }
         // 开始和结束时间不能和其他活动时间有重叠
         SignActivity checkData = baseMapper.selectOne(new LambdaQueryWrapper<SignActivity>()

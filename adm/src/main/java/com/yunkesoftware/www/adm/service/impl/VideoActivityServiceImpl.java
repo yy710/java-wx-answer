@@ -40,12 +40,12 @@ public class VideoActivityServiceImpl extends ServiceImpl<VideoActivityMapper, V
 
     @Override
     public void addOrModify(VideoActivity videoActivity) {
-        if (videoActivity.getStartTime().isAfter(videoActivity.getEndTime())) {
-            throw new YunKeException(ExceptionEnum.FAIL, "开始时间不能大于结束时间");
+        if (!videoActivity.getEndTime().isAfter(videoActivity.getStartTime())) {
+            throw new YunKeException(ExceptionEnum.FAIL, "结束时间必须晚于开始时间");
         }
         LocalDateTime nowTime = LocalDateTime.now();
-        if (nowTime.isAfter(videoActivity.getEndTime())) {
-            throw new YunKeException(ExceptionEnum.FAIL, "结束时间不能小于当前时间");
+        if (!videoActivity.getEndTime().isAfter(nowTime)) {
+            throw new YunKeException(ExceptionEnum.FAIL, "结束时间必须晚于当前时间");
         }
         // 校验时间不能和其它活动重复
         LambdaQueryWrapper<VideoActivity> queryWrapper = new LambdaQueryWrapper<VideoActivity>()

@@ -8,7 +8,6 @@ import com.yunkesoftware.www.exception.ExceptionEnum;
 import com.yunkesoftware.www.exception.YunKeException;
 import com.yunkesoftware.www.web.entity.*;
 import com.yunkesoftware.www.web.mapper.*;
-import com.yunkesoftware.www.web.service.TimeLimitService;
 import com.yunkesoftware.www.web.service.TopicRecordService;
 import com.yunkesoftware.www.web.service.UserWalletService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -21,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +34,8 @@ import java.util.List;
  */
 @Service
 public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, TopicRecord> implements TopicRecordService {
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     @Resource
     private TopicRecordTopicMapper topicRecordTopicMapper;
     @Resource
@@ -49,10 +51,22 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
     @Resource
     private TopicRecordActivityMapper topicRecordActivityMapper;
     @Resource
-    private TimeLimitService timeLimitService;
-    @Resource
     private UserWalletService userWalletService;
 
+    private void checkTopicActivityTime(TopicActivity topicActivity, LocalDateTime nowTime) {
+        if (topicActivity == null) {
+            throw new YunKeException(ExceptionEnum.FAIL, "当前活动不存在-请刷新页面重试");
+        }
+        if (topicActivity.getStartTime() == null || topicActivity.getEndTime() == null) {
+            throw new YunKeException(ExceptionEnum.FAIL, "请先在管理后台设置答题活动开始时间和结束时间");
+        }
+        if (nowTime.isBefore(topicActivity.getStartTime())) {
+            throw new YunKeException(ExceptionEnum.FAIL, "获得积分开始时间为：" + topicActivity.getStartTime().format(TIME_FORMATTER));
+        }
+        if (nowTime.isAfter(topicActivity.getEndTime())) {
+            throw new YunKeException(ExceptionEnum.FAIL, "获得积分结束时间为：" + topicActivity.getEndTime().format(TIME_FORMATTER));
+        }
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -63,9 +77,7 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
         }
         TopicActivity topicActivity = topicActivityMapper.selectById(topicLine.getTopicActivityId());
         LocalDateTime nowTime = LocalDateTime.now();
-        if (topicActivity == null || topicActivity.getEndTime().isBefore(nowTime)) {
-            throw new YunKeException(ExceptionEnum.FAIL, "当前活动已结束-请刷新页面重试");
-        }
+        checkTopicActivityTime(topicActivity, nowTime);
 
         String userId = StpUtil.getLoginIdAsString();
 
@@ -139,7 +151,6 @@ public class TopicRecordServiceImpl extends ServiceImpl<TopicRecordMapper, Topic
         topicRecordTopicItemMapper.insertBatch(recordTopicItemList);
         // 进行奖励积分赠送
         if (rewardAmount.compareTo(BigDecimal.ZERO) > 0) {
-            timeLimitService.checkTimeLimit();
             userWalletService.rewardIntegral(userId, topicRecord.getId(), UserWalletEventEnum.TOPIC_REWARD.getKey(), rewardAmount);
         }
 

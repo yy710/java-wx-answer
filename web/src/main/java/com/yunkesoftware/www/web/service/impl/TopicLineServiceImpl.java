@@ -44,25 +44,29 @@ public class TopicLineServiceImpl extends ServiceImpl<TopicLineMapper, TopicLine
     @Resource
     private UserWalletMapper userWalletMapper;
 
+    private TopicActivity getOpenTopicActivity() {
+        TopicActivity topicActivity = (TopicActivity) redisTemplate.opsForValue().get(RedisKey.TOPIC_ACTIVITY);
+        if (topicActivity == null) {
+            LocalDateTime nowTime = LocalDateTime.now();
+            topicActivity = topicActivityMapper.selectOne(new LambdaQueryWrapper<TopicActivity>()
+                    .le(TopicActivity::getStartTime, nowTime)
+                    .gt(TopicActivity::getEndTime, nowTime)
+                    .select(TopicActivity::getId, TopicActivity::getEndTime, TopicActivity::getLimitNum));
+            if (topicActivity != null) {
+                long seconds = Math.max(Duration.between(nowTime, topicActivity.getEndTime()).getSeconds(), 1);
+                redisTemplate.opsForValue().set(RedisKey.TOPIC_ACTIVITY, topicActivity, seconds, TimeUnit.SECONDS);
+            }
+        }
+        return topicActivity;
+    }
 
     @Override
     public List<TopicLine> listByQuery() {
         String userId = StpUtil.getLoginIdAsString();
 
-        LocalDateTime nowTime = LocalDateTime.now();
-
-        TopicActivity topicActivity = (TopicActivity) redisTemplate.opsForValue().get(RedisKey.TOPIC_ACTIVITY);
-
+        TopicActivity topicActivity = getOpenTopicActivity();
         if (topicActivity == null) {
-            topicActivity = topicActivityMapper.selectOne(new LambdaQueryWrapper<TopicActivity>()
-                    .le(TopicActivity::getStartTime, nowTime)
-                    .gt(TopicActivity::getEndTime, nowTime)
-                    .select(TopicActivity::getId, TopicActivity::getEndTime, TopicActivity::getLimitNum));
-            if (topicActivity == null) {
-                return new ArrayList<>();
-            }
-            long seconds = Duration.between(nowTime, topicActivity.getEndTime()).getSeconds();
-            redisTemplate.opsForValue().set(RedisKey.TOPIC_ACTIVITY, topicActivity, seconds, TimeUnit.SECONDS);
+            return new ArrayList<>();
         }
 
         List<TopicLine> topicLineList = baseMapper.selectList(new LambdaQueryWrapper<TopicLine>()
@@ -90,7 +94,7 @@ public class TopicLineServiceImpl extends ServiceImpl<TopicLineMapper, TopicLine
     @Override
     public Boolean checkContinue(String id) {
         String userId = StpUtil.getLoginIdAsString();
-        TopicActivity topicActivity = (TopicActivity) redisTemplate.opsForValue().get(RedisKey.TOPIC_ACTIVITY);
+        TopicActivity topicActivity = getOpenTopicActivity();
         if (topicActivity == null) {
             return false;
         }
