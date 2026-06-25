@@ -55,52 +55,52 @@ public class TopicRecordSingleServiceImpl extends ServiceImpl<TopicRecordSingleM
         recordSingle.setTopicTitle(topic.getTitle());
         recordSingle.setId(id);
         recordSingle.setRightFlag(false);
-        recordSingle.setRewardAmount(topic.getRewardAmount());
-
-        // 只有首次答对才积分
-//        TopicRecordSingle checkData = baseMapper.selectOne(new LambdaQueryWrapper<TopicRecordSingle>()
-//                .eq(TopicRecordSingle::getUserId, userId)
-//                .eq(TopicRecordSingle::getTopicId, recordSingle.getTopicId())
-//                .select(TopicRecordSingle::getId)
-//                .last("LIMIT 1"));
+        recordSingle.setRewardAmount(BigDecimal.ZERO);
 
         for (TopicRecordSingleItem singleItem : recordSingle.getRecordSingleItemList()) {
             singleItem.setTopicRecordSingleId(id);
             singleItem.setAnswerFlag(false);
             if (Boolean.TRUE.equals(singleItem.getCheckFlag())) {
                 TopicItem topicItem = topicItemMapper.selectById(singleItem.getTopicItemId());
+                if (topicItem == null) {
+                    throw new YunKeException(ExceptionEnum.FAIL, "未知题目选项信息-请刷新页面重新答题");
+                }
                 if (Boolean.TRUE.equals(topicItem.getAnswerFlag())) {
                     recordSingle.setRightFlag(true);
                     singleItem.setAnswerFlag(true);
                 }
             }
         }
-        baseMapper.insert(recordSingle);
-        topicRecordSingleItemMapper.insertBatch(recordSingle.getRecordSingleItemList());
 
         TopicSingleResultVo resultVo = new TopicSingleResultVo();
         resultVo.setRewardAmount(BigDecimal.ZERO);
-        if (!recordSingle.getRightFlag()) {
-            return resultVo;
-        }
-        if (topic.getRewardAmount().compareTo(BigDecimal.ZERO) < 1) {
-            return resultVo;
-        }
 
-        try {
-            // 检查时间限制
-            timeLimitService.checkTimeLimit();
-        } catch (YunKeException e) {
-            resultVo.setMsg(e.getMessage());
-            return resultVo;
+        BigDecimal rewardAmount = BigDecimal.ZERO;
+        if (Boolean.TRUE.equals(recordSingle.getRightFlag())
+                && topic.getRewardAmount() != null
+                && topic.getRewardAmount().compareTo(BigDecimal.ZERO) > 0) {
+            try {
+                // 检查时间限制
+                timeLimitService.checkSingleTopicTimeLimit();
+                String rewardedRecordId = baseMapper.selectRewardedRecordId(userId, recordSingle.getTopicId());
+                if (rewardedRecordId != null) {
+                    resultVo.setMsg("只有首次答题可获得积分奖励！");
+                } else {
+                    rewardAmount = topic.getRewardAmount();
+                }
+            } catch (YunKeException e) {
+                resultVo.setMsg(e.getMessage());
+            }
         }
+        recordSingle.setRewardAmount(rewardAmount);
 
-//        if (checkData != null) {
-//            resultVo.setMsg("只有首次答题可获得积分奖励！");
-//            return resultVo;
-//        }
-        userWalletService.rewardIntegral(userId, id, UserWalletEventEnum.SINGLE_TOPIC_REWARD.getKey(), topic.getRewardAmount());
-        resultVo.setRewardAmount(topic.getRewardAmount());
+        baseMapper.insert(recordSingle);
+        topicRecordSingleItemMapper.insertBatch(recordSingle.getRecordSingleItemList());
+
+        if (rewardAmount.compareTo(BigDecimal.ZERO) > 0) {
+            userWalletService.rewardIntegral(userId, id, UserWalletEventEnum.SINGLE_TOPIC_REWARD.getKey(), rewardAmount);
+            resultVo.setRewardAmount(rewardAmount);
+        }
         return resultVo;
     }
 }

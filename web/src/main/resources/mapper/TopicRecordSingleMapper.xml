@@ -18,6 +18,20 @@
         id, topic_id, topic_title, user_id, right_flag, reward_amount, create_time
     </sql>
     <select id="listRightTopicId" resultType="java.lang.String">
-        SELECT topic_id FROM topic_record_single WHERE right_flag = 1 AND user_id = #{userId}
+        SELECT DISTINCT trs.topic_id
+        FROM topic_record_single trs
+        INNER JOIN user_wallet uw ON uw.user_id = trs.user_id AND uw.type = 1
+        INNER JOIN user_wallet_record uwr ON uwr.wallet_id = uw.id AND uwr.event_id = trs.id AND uwr.event_type = 7
+        WHERE trs.right_flag = 1 AND trs.user_id = #{userId}
+    </select>
+    <select id="selectRewardedRecordId" resultType="java.lang.String">
+        SELECT trs.id
+        FROM topic_record_single trs
+        INNER JOIN user_wallet uw ON uw.user_id = trs.user_id AND uw.type = 1
+        INNER JOIN user_wallet_record uwr ON uwr.wallet_id = uw.id AND uwr.event_id = trs.id AND uwr.event_type = 7
+        WHERE trs.right_flag = 1
+          AND trs.user_id = #{userId}
+          AND trs.topic_id = #{topicId}
+        LIMIT 1
     </select>
 </mapper>

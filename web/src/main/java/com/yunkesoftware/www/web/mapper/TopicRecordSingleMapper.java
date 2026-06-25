@@ -20,4 +20,6 @@ public interface TopicRecordSingleMapper extends BaseMapper<TopicRecordSingle> {
 
     Set<String> listRightTopicId(@Param("userId") String userId);
 
+    String selectRewardedRecordId(@Param("userId") String userId, @Param("topicId") String topicId);
+
 }
