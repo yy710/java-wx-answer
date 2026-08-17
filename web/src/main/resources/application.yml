@@ -1,0 +1,33 @@
+spring:
+  servlet:
+    multipart:
+      max-request-size: 50MB
+      max-file-size: 50MB
+  profiles:
+    active: prod
+logging:
+  level:
+    root: info
+    org.springframework.web: info
+    cn.binarywang.wx.miniapp: debug
+
+wx:
+  mp:
+    configs:
+      - appId: wx8cdc02fdb60db8ed
+        secret: 2de7b88ea3207b41172bf14bc170c9e6
+        token:
+        aesKey:
+        msgDataFormat: JSON
+
+cache:
+  type: memory
+
+upload:
+  uploadType: cos
+  serverUrl: https://city-walk-1403847979.cos.ap-guangzhou.myqcloud.com
+  accessKey: AKIDymbDblgPuBDD9zjZKxOflfNuLZZhgRzJ
+  secretKey: 50kJApMhsrdYSE0jMuKfrwoSsOiogLBr
+  bucket: city-walk-1403847979
+  region: ap-guangzhou
+  post: ?x-oss-process=video/snapshot,t_1,m_fast
