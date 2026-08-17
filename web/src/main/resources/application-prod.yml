@@ -1,3 +1,12 @@
+wx:
+  mp:
+    configs:
+      - appId: ${WX_MP_APP_ID}
+        secret: ${WX_MP_SECRET}
+        token: ${WX_MP_TOKEN:}
+        aesKey: ${WX_MP_AES_KEY:}
+        msgDataFormat: JSON
+
 server:
   port: 9462
   undertow:
@@ -111,4 +120,3 @@ knife4j:
   production: true
   setting:
     language: zh_cn
-
