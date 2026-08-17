@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunkesoftware.www.web.mapper.DailyTaskVideoSessionMapper">
+    <select id="selectByUserDateForUpdate" resultType="com.yunkesoftware.www.web.entity.DailyTaskVideoSession">
+        SELECT * FROM daily_task_video_session WHERE user_id = #{userId} AND task_date = #{taskDate} LIMIT 1 FOR UPDATE
+    </select>
+</mapper>

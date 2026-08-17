@@ -9,13 +9,17 @@ import com.yunkesoftware.www.enums.UserWalletTypeEnum;
 import com.yunkesoftware.www.exception.ExceptionEnum;
 import com.yunkesoftware.www.exception.YunKeException;
 import com.yunkesoftware.www.web.entity.Payment;
+import com.yunkesoftware.www.web.entity.DailyTaskConfig;
 import com.yunkesoftware.www.web.entity.UserWallet;
 import com.yunkesoftware.www.web.entity.UserWalletRecord;
 import com.yunkesoftware.www.web.mapper.PaymentMapper;
 import com.yunkesoftware.www.web.mapper.UserWalletMapper;
 import com.yunkesoftware.www.web.mapper.UserWalletRecordMapper;
+import com.yunkesoftware.www.web.mapper.DailyTaskConfigMapper;
 import com.yunkesoftware.www.web.query.ScanPayQuery;
 import com.yunkesoftware.www.web.service.UserWalletService;
+import com.yunkesoftware.www.web.service.RewardPositiveService;
+import com.yunkesoftware.www.web.vo.RewardPositiveResult;
 import jakarta.annotation.Resource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -37,6 +41,10 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     private PaymentMapper paymentMapper;
     @Resource
     private UserWalletRecordMapper userWalletRecordMapper;
+    @Resource
+    private RewardPositiveService rewardPositiveService;
+    @Resource
+    private DailyTaskConfigMapper dailyTaskConfigMapper;
 
     @Override
     public UserWallet getOrCreateByType(Integer type) {
@@ -64,67 +72,16 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public UserWallet rewardIntegral(String userId, String eventId, Integer eventType, BigDecimal rewardAmount) {
-        if (rewardAmount == null || rewardAmount.compareTo(BigDecimal.ZERO) < 1) {
-            throw new YunKeException(ExceptionEnum.FAIL, "奖励积分无效");
-        }
-
-        UserWallet userWallet = baseMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
+        rewardPositiveService.reward(userId, eventId, eventType, rewardAmount);
+        return baseMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
                 .eq(UserWallet::getUserId, userId)
                 .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
-        if (userWallet == null) {
-            userWallet = new UserWallet();
-            userWallet.setUserId(userId);
-            userWallet.setType(UserWalletTypeEnum.INTEGRAL.getKey());
-            userWallet.setAmount(rewardAmount);
-            userWallet.setVersion(0);
-            try {
-                int insertRow = baseMapper.insert(userWallet);
-                if (insertRow < 1) {
-                    throw new YunKeException(ExceptionEnum.FAIL, "积分入账失败-请刷新重试");
-                }
-                insertWalletRecord(userWallet.getId(), eventId, eventType, rewardAmount, userWallet.getAmount());
-                return userWallet;
-            } catch (DuplicateKeyException ignored) {
-                userWallet = baseMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
-                        .eq(UserWallet::getUserId, userId)
-                        .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
-            }
-        }
-
-        if (userWallet == null) {
-            throw new YunKeException(ExceptionEnum.FAIL, "积分账户异常-请刷新重试");
-        }
-        if (userWallet.getAmount().compareTo(BigDecimal.valueOf(4000)) >= 0) {
-            throw new YunKeException(ExceptionEnum.FAIL, "已达积分上限");
-        }
-
-        BigDecimal afterAmount = userWallet.getAmount().add(rewardAmount);
-        int updateRow = baseMapper.update(new LambdaUpdateWrapper<UserWallet>()
-                .eq(UserWallet::getId, userWallet.getId())
-                .eq(UserWallet::getVersion, userWallet.getVersion())
-                .set(UserWallet::getVersion, userWallet.getVersion() + 1)
-                .set(UserWallet::getAmount, afterAmount));
-        if (updateRow < 1) {
-            throw new YunKeException(ExceptionEnum.FAIL, "积分入账失败-请刷新重试");
-        }
-
-        userWallet.setAmount(afterAmount);
-        userWallet.setVersion(userWallet.getVersion() + 1);
-        insertWalletRecord(userWallet.getId(), eventId, eventType, rewardAmount, afterAmount);
-        return userWallet;
     }
 
-    private void insertWalletRecord(String walletId, String eventId, Integer eventType, BigDecimal changeAmount, BigDecimal afterAmount) {
-        UserWalletRecord walletRecord = new UserWalletRecord();
-        walletRecord.setWalletId(walletId);
-        walletRecord.setEventId(eventId);
-        walletRecord.setEventType(eventType);
-        walletRecord.setChangeAmount(changeAmount);
-        walletRecord.setAfterAmount(afterAmount);
-        walletRecord.setStatus(true);
-        userWalletRecordMapper.insert(walletRecord);
+    @Override
+    public RewardPositiveResult rewardPositive(String userId, String eventId, Integer eventType, BigDecimal rewardAmount) {
+        return rewardPositiveService.reward(userId, eventId, eventType, rewardAmount);
     }
 
     @Override
@@ -164,7 +121,10 @@ public class UserWalletServiceImpl extends ServiceImpl<UserWalletMapper, UserWal
         UserWallet userWallet = baseMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
                 .eq(UserWallet::getUserId, StpUtil.getLoginIdAsString())
                 .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
-        return userWallet != null && userWallet.getAmount().compareTo(BigDecimal.valueOf(4000)) > -1;
+        DailyTaskConfig config = dailyTaskConfigMapper.selectById(1);
+        BigDecimal limit = config == null || config.getWalletMaxPoints() == null
+                ? BigDecimal.valueOf(4000) : config.getWalletMaxPoints();
+        return userWallet != null && userWallet.getAmount().compareTo(limit) > -1;
     }
 
 

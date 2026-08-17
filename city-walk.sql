@@ -286,6 +286,8 @@ CREATE TABLE `topic`  (
   `id` bigint NOT NULL COMMENT 'id',
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '标题',
   `reward_amount` decimal(10, 2) NOT NULL COMMENT '奖励积分数',
+  `daily_task_enabled` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否作为每日答题题库',
+  `finance_category` varchar(64) NULL COMMENT '金融知识分类',
   `create_time` datetime NOT NULL COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE
@@ -464,6 +466,8 @@ CREATE TABLE `video`  (
   `descr` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '文字介绍',
   `url_video` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '视频链接',
   `url_pic` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '封面图',
+  `daily_task_enabled` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否作为每日消保视频',
+  `duration_seconds` int unsigned NULL COMMENT '可信视频时长（秒）',
   `ticket_total` int NULL DEFAULT 0 COMMENT '票数',
   `seq` int NULL DEFAULT 1 COMMENT '排序',
   `create_time` datetime NOT NULL COMMENT '创建时间',
@@ -530,5 +534,104 @@ CREATE TABLE `yk_user`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX ```account```(`mobile` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '小程序用户信息' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Daily points and poster extension (J-01, new deployments)
+-- ----------------------------
+CREATE TABLE `daily_task_config` (
+  `id` tinyint unsigned NOT NULL,
+  `enabled` tinyint(1) NOT NULL DEFAULT 0,
+  `quiz_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `video_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `affair_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `share_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `wallet_max_points` decimal(10,2) NOT NULL DEFAULT 4000.00,
+  `daily_positive_max_points` decimal(10,2) NOT NULL DEFAULT 60.00,
+  `quiz_daily_attempts` smallint unsigned NOT NULL DEFAULT 1,
+  `quiz_question_count` smallint unsigned NOT NULL DEFAULT 2,
+  `quiz_reward_per_correct` decimal(10,2) NOT NULL DEFAULT 10.00,
+  `quiz_time_limit_seconds` int unsigned NOT NULL DEFAULT 120,
+  `video_daily_count` smallint unsigned NOT NULL DEFAULT 1,
+  `video_reward_points` decimal(10,2) NOT NULL DEFAULT 20.00,
+  `video_min_watch_ratio` decimal(5,4) NOT NULL DEFAULT 0.5000,
+  `affair_daily_count` smallint unsigned NOT NULL DEFAULT 1,
+  `affair_reward_points` decimal(10,2) NOT NULL DEFAULT 10.00,
+  `share_daily_count` smallint unsigned NOT NULL DEFAULT 1,
+  `share_reward_points` decimal(10,2) NOT NULL DEFAULT 10.00,
+  `poster_cache_days` smallint unsigned NOT NULL DEFAULT 7,
+  `version` bigint unsigned NOT NULL DEFAULT 1,
+  `updated_by` bigint NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `ck_daily_task_config_singleton` CHECK (`id` = 1),
+  CONSTRAINT `ck_daily_task_config_ratio` CHECK (`video_min_watch_ratio` >= 0 AND `video_min_watch_ratio` <= 1)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='每日任务配置';
+INSERT INTO `daily_task_config` (`id`) VALUES (1);
+CREATE TABLE `daily_task_quiz_session` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT, `user_id` bigint NOT NULL, `task_date` date NOT NULL,
+  `status` varchar(16) NOT NULL, `question_count` smallint unsigned NOT NULL,
+  `reward_per_correct` decimal(10,2) NOT NULL, `time_limit_seconds` int unsigned NOT NULL,
+  `started_at` datetime NOT NULL, `deadline_at` datetime NOT NULL, `submitted_at` datetime NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_quiz_user_date` (`user_id`,`task_date`), KEY `idx_quiz_status_deadline` (`status`,`deadline_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='每日答题会话';
+CREATE TABLE `daily_task_quiz_question` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT, `session_id` bigint unsigned NOT NULL,
+  `sequence_no` smallint unsigned NOT NULL, `topic_id` bigint NOT NULL, `question_snapshot` json NOT NULL,
+  `correct_option_snapshot` varchar(32) NOT NULL, `user_option` varchar(32) NULL,
+  `is_correct` tinyint(1) NULL, `requested_points` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `awarded_points` decimal(10,2) NOT NULL DEFAULT 0.00, PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_quiz_question_order` (`session_id`,`sequence_no`), KEY `idx_quiz_question_topic` (`topic_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='每日答题题目快照';
+CREATE TABLE `daily_task_video_session` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT, `user_id` bigint NOT NULL, `task_date` date NOT NULL,
+  `video_id` bigint NOT NULL, `video_duration_seconds` int unsigned NOT NULL, `min_watch_ratio` decimal(5,4) NOT NULL,
+  `required_watch_seconds` int unsigned NOT NULL, `credited_watch_seconds` int unsigned NOT NULL DEFAULT 0,
+  `last_position_seconds` decimal(12,3) NOT NULL DEFAULT 0, `last_heartbeat_at` datetime NULL,
+  `status` varchar(16) NOT NULL, `version` bigint unsigned NOT NULL DEFAULT 1, `started_at` datetime NOT NULL,
+  `claimed_at` datetime NULL, PRIMARY KEY (`id`), UNIQUE KEY `uk_video_user_date` (`user_id`,`task_date`),
+  KEY `idx_video_last_heartbeat` (`last_heartbeat_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='每日视频观看会话';
+CREATE TABLE `daily_task_claim` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT, `user_id` bigint NOT NULL, `task_date` date NOT NULL,
+  `task_type` varchar(32) NOT NULL, `source` varchar(64) NOT NULL, `requested_points` decimal(10,2) NOT NULL,
+  `awarded_points` decimal(10,2) NOT NULL DEFAULT 0.00, `award_reason` varchar(32) NOT NULL,
+  `wallet_record_id` bigint NULL, `completed_at` datetime NOT NULL, PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_daily_task_claim` (`user_id`,`task_date`,`task_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='每日任务完成记录';
+CREATE TABLE `daily_task_action_token` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT, `token_hash` char(64) NOT NULL, `user_id` bigint NOT NULL,
+  `action_type` varchar(16) NOT NULL, `asset_type` varchar(16) NOT NULL, `asset_id` varchar(128) NOT NULL,
+  `expires_at` datetime NOT NULL, `used_at` datetime NULL, `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_action_token_hash` (`token_hash`), KEY `idx_action_token_user_expiry` (`user_id`,`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='保存分享一次性令牌';
+CREATE TABLE `poster_template` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT, `name` varchar(128) NOT NULL, `status` varchar(16) NOT NULL,
+  `template_version` int unsigned NOT NULL, `canvas_width` int unsigned NOT NULL, `canvas_height` int unsigned NOT NULL,
+  `restricted_json` json NOT NULL, `preview_url` varchar(512) NULL, `published_at` datetime NULL, `created_by` bigint NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_poster_template_version` (`id`,`template_version`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='海报模板';
+CREATE TABLE `poster_template_asset` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT, `template_id` bigint unsigned NOT NULL, `asset_key` varchar(128) NOT NULL,
+  `file_url` varchar(512) NOT NULL, `mime_type` varchar(64) NOT NULL, `width` int unsigned NOT NULL,
+  `height` int unsigned NOT NULL, `sha256` char(64) NOT NULL, `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_poster_asset_key` (`template_id`,`asset_key`), UNIQUE KEY `uk_poster_asset_hash` (`sha256`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='海报素材';
+CREATE TABLE `poster_generation` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT, `user_id` bigint NOT NULL, `template_id` bigint unsigned NOT NULL,
+  `template_version` int unsigned NOT NULL, `input_sha256` char(64) NOT NULL, `result_url` varchar(512) NULL,
+  `status` varchar(16) NOT NULL, `expires_at` datetime NOT NULL, `error_code` varchar(64) NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_poster_generation_cache` (`user_id`,`template_id`,`template_version`,`input_sha256`), KEY `idx_poster_generation_expiry` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='海报生成记录';
+CREATE TABLE `reward_claims` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT, `user_id` bigint NOT NULL, `event_id` varchar(128) NOT NULL,
+  `event_type` int NOT NULL, `task_date` date NOT NULL, `requested_points` decimal(10,2) NOT NULL,
+  `awarded_points` decimal(10,2) NOT NULL DEFAULT 0.00, `status` varchar(16) NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, `claimed_at` datetime NULL, PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_reward_claim_event` (`user_id`,`event_id`), KEY `idx_reward_claim_positive_day` (`user_id`,`task_date`,`awarded_points`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='统一奖励幂等记录';
 
 SET FOREIGN_KEY_CHECKS = 1;

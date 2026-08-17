@@ -15,7 +15,12 @@ public enum UserWalletEventEnum {
     VIDEO(6, "积分视频奖励"),
     TICKET_VIDEO(8, "投票视频奖励"),
 
-    SINGLE_TOPIC_REWARD(7, "趣味答题");
+    SINGLE_TOPIC_REWARD(7, "趣味答题"),
+
+    DAILY_QUIZ_CORRECT(9, "每日知识问答答对"),
+    DAILY_VIDEO(10, "每日消保视频"),
+    DAILY_AFFAIR(11, "每日民生实事"),
+    DAILY_SHARE_OR_SAVE(12, "每日保存或分享");
 
     private final int key;
     private final String label;

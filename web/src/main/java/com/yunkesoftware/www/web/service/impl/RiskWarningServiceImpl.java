@@ -83,17 +83,14 @@ public class RiskWarningServiceImpl extends ServiceImpl<RiskWarningMapper, RiskW
                 .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
 
         if (userWallet != null) {
-            if (userWallet.getAmount().compareTo(BigDecimal.valueOf(4000)) >= 0) {
-                throw new YunKeException(ExceptionEnum.FAIL, "已达积分上限");
-            }
-            // 检查当天阅读奖励次数
+            // 幂等和每日/累计上限统一由 RewardPositiveService 结算；这里仅保留旧的
+            // 首次阅读内容校验，避免旧入口绕过每日 60 分及账户 4000 分限制。
             if (rewardSet != null) {
                 int dailyRewardNum = userWalletRecordMapper.countTodayNum(userWallet.getId(), UserWalletEventEnum.RISK_READ.getKey(), LocalDate.now());
                 if (rewardSet.getRewardLimit() <= dailyRewardNum) {
                     throw new YunKeException(ExceptionEnum.FAIL, "今日已达到次数上限" + rewardSet.getRewardLimit());
                 }
             }
-            // 没有赠送过才进行赠送
             UserWalletRecord checkRecord = userWalletRecordMapper.selectOne(new LambdaQueryWrapper<UserWalletRecord>()
                     .eq(UserWalletRecord::getWalletId, userWallet.getId())
                     .eq(UserWalletRecord::getEventId, id)

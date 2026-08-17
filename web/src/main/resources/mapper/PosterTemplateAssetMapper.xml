@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunkesoftware.www.web.mapper.PosterTemplateAssetMapper">
+    <select id="listByTemplate" resultType="com.yunkesoftware.www.web.entity.PosterTemplateAsset">
+        SELECT * FROM poster_template_asset WHERE template_id = #{templateId} ORDER BY id ASC
+    </select>
+</mapper>
