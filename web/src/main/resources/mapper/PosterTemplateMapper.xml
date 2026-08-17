@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunkesoftware.www.web.mapper.PosterTemplateMapper">
+    <select id="listPublished" resultType="com.yunkesoftware.www.web.entity.PosterTemplate">
+        SELECT id, name, status, template_version, canvas_width, canvas_height, preview_url
+        FROM poster_template WHERE status = 'PUBLISHED' ORDER BY updated_at DESC
+    </select>
+    <select id="selectPublished" resultType="com.yunkesoftware.www.web.entity.PosterTemplate">
+        SELECT * FROM poster_template
+        WHERE id = #{id} AND status = 'PUBLISHED'
+        <if test="version != null">AND template_version = #{version}</if>
+        ORDER BY template_version DESC LIMIT 1
+    </select>
+</mapper>

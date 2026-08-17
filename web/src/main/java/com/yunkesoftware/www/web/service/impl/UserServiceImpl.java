@@ -22,6 +22,7 @@ import com.yunkesoftware.www.web.mapper.UserMapper;
 import com.yunkesoftware.www.web.mapper.UserWalletMapper;
 import com.yunkesoftware.www.web.mapper.UserWalletRecordMapper;
 import com.yunkesoftware.www.web.service.UserService;
+import com.yunkesoftware.www.web.service.UserWalletService;
 import com.yunkesoftware.www.web.vo.LoginVo;
 import com.yunkesoftware.www.web.vo.UserVo;
 import jakarta.annotation.Resource;
@@ -59,6 +60,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private UserWalletRecordMapper userWalletRecordMapper;
     @Resource
     private InviteSetMapper inviteSetMapper;
+    @Resource
+    private UserWalletService userWalletService;
 
 
     @Override
@@ -127,43 +130,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 if (parent != null) {
                     InviteSet inviteSet = inviteSetMapper.selectOne(new LambdaQueryWrapper<InviteSet>().last("LIMIT 1"));
                     if (inviteSet != null && inviteSet.getRewardAmount().compareTo(BigDecimal.ZERO) > 0) {
+                        // 邀请奖励保留原有 rewardLimit 业务限制，但实际入账统一走积分结算服务，
+                        // 因而同样计入每日 60 分和账户累计 4000 分上限。
                         UserWallet userWallet = userWalletMapper.selectOne(new LambdaQueryWrapper<UserWallet>()
                                 .eq(UserWallet::getUserId, loginVo.getParentId())
                                 .eq(UserWallet::getType, UserWalletTypeEnum.INTEGRAL.getKey()));
-
-                        UserWalletRecord walletRecord = new UserWalletRecord();
-                        walletRecord.setChangeAmount(inviteSet.getRewardAmount());
-                        walletRecord.setEventId(checkData.getId());
-                        walletRecord.setEventType(UserWalletEventEnum.INVITE_REWARD.getKey());
-                        if (userWallet != null) {
-                            // 检查奖励次数是否达上限
-                            Long checkCount = userWalletRecordMapper.selectCount(new LambdaQueryWrapper<UserWalletRecord>()
-                                    .eq(UserWalletRecord::getWalletId, userWallet.getId())
-                                    .eq(UserWalletRecord::getEventType, UserWalletEventEnum.INVITE_REWARD.getKey()));
-                            if (checkCount < inviteSet.getRewardLimit()) {
-                                //执行奖励赠送
-                                BigDecimal afterAmount = userWallet.getAmount().add(inviteSet.getRewardAmount());
-                                int updateRow = userWalletMapper.update(new LambdaUpdateWrapper<UserWallet>()
-                                        .eq(UserWallet::getId, userWallet.getId())
-                                        .eq(UserWallet::getVersion, userWallet.getVersion())
-                                        .set(UserWallet::getAmount, afterAmount)
-                                        .set(UserWallet::getVersion, userWallet.getVersion() + 1));
-                                walletRecord.setStatus(updateRow > 0);
-                                walletRecord.setAfterAmount(afterAmount);
-                                walletRecord.setWalletId(userWallet.getId());
-                                userWalletRecordMapper.insert(walletRecord);
-                            }
-                        } else {
-                            userWallet = new UserWallet();
-                            userWallet.setUserId(loginVo.getParentId());
-                            userWallet.setType(UserWalletTypeEnum.INTEGRAL.getKey());
-                            userWallet.setAmount(inviteSet.getRewardAmount());
-                            userWallet.setVersion(0);
-                            int insertRow = userWalletMapper.insert(userWallet);
-                            walletRecord.setStatus(insertRow > 0);
-                            walletRecord.setAfterAmount(userWallet.getAmount());
-                            walletRecord.setWalletId(userWallet.getId());
-                            userWalletRecordMapper.insert(walletRecord);
+                        Long checkCount = userWallet == null ? 0L : userWalletRecordMapper.selectCount(new LambdaQueryWrapper<UserWalletRecord>()
+                                .eq(UserWalletRecord::getWalletId, userWallet.getId())
+                                .eq(UserWalletRecord::getEventType, UserWalletEventEnum.INVITE_REWARD.getKey()));
+                        if (checkCount < inviteSet.getRewardLimit()) {
+                            userWalletService.rewardPositive(loginVo.getParentId(), checkData.getId(),
+                                    UserWalletEventEnum.INVITE_REWARD.getKey(), inviteSet.getRewardAmount());
                         }
                     }
                 }

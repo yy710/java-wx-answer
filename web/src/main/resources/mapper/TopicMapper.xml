@@ -36,5 +36,14 @@
         LIMIT #{topicNum}
     </select>
 
+    <select id="listDailyTaskTopics" resultType="com.yunkesoftware.www.web.entity.Topic">
+        SELECT id, title, reward_amount, daily_task_enabled, finance_category
+        FROM topic
+        WHERE daily_task_enabled = 1
+          AND EXISTS (SELECT 1 FROM topic_item ti WHERE ti.topic_id = topic.id AND ti.answer_flag = 1)
+        ORDER BY RAND()
+        LIMIT #{topicNum}
+    </select>
+
 
 </mapper>

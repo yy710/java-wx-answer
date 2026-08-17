@@ -20,4 +20,6 @@ public interface TopicMapper extends BaseMapper<Topic> {
     List<Topic> listNewOrWrong(@Param("rightIds") Set<String> rightIds, @Param("topicNum") Integer topicNum);
 
     List<Topic> listRight(@Param("rightIds") Set<String> rightIds, @Param("topicNum") Integer topicNum);
+
+    List<Topic> listDailyTaskTopics(@Param("topicNum") Integer topicNum);
 }

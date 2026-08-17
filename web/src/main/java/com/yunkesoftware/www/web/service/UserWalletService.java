@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.yunkesoftware.www.web.query.ScanPayQuery;
 
 import java.math.BigDecimal;
+import com.yunkesoftware.www.web.vo.RewardPositiveResult;
 
 /**
  * <p>
@@ -19,6 +20,8 @@ public interface UserWalletService extends IService<UserWallet> {
     UserWallet getOrCreateByType(Integer type);
 
     UserWallet rewardIntegral(String userId, String eventId, Integer eventType, BigDecimal rewardAmount);
+
+    RewardPositiveResult rewardPositive(String userId, String eventId, Integer eventType, BigDecimal rewardAmount);
 
     void scanPay(ScanPayQuery query);
 

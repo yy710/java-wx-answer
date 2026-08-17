@@ -54,6 +54,14 @@ public class Video extends PageCurrency {
     @TableField("url_pic")
     private String urlPic;
 
+    @Schema(description = "是否作为每日消保视频候选")
+    @TableField("daily_task_enabled")
+    private Boolean dailyTaskEnabled;
+
+    @Schema(description = "可信视频时长（秒）")
+    @TableField("duration_seconds")
+    private Integer durationSeconds;
+
 
     @Schema(description = "票数")
     @TableField("ticket_total")

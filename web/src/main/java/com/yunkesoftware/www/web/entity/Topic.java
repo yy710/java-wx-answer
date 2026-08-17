@@ -40,6 +40,12 @@ public class Topic implements Serializable {
     @TableField("reward_amount")
     private BigDecimal rewardAmount;
 
+    @TableField("daily_task_enabled")
+    private Boolean dailyTaskEnabled;
+
+    @TableField("finance_category")
+    private String financeCategory;
+
 
     @Schema(description = "题目选项")
     @TableField(exist = false)

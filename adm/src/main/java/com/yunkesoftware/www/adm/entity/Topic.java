@@ -50,6 +50,14 @@ public class Topic extends PageCurrency {
     @ExcelProperty("奖励积分数")
     private BigDecimal rewardAmount;
 
+    @TableField("daily_task_enabled")
+    @ExcelProperty("每日题库启用")
+    private Boolean dailyTaskEnabled;
+
+    @TableField("finance_category")
+    @ExcelProperty("金融知识分类")
+    private String financeCategory;
+
     @Schema(description = "创建时间")
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @ExcelProperty("创建时间")

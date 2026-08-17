@@ -63,6 +63,16 @@ public class Video extends PageCurrency {
     @ExcelProperty("封面图")
     private String urlPic;
 
+    @Schema(description = "每日消保视频候选")
+    @TableField("daily_task_enabled")
+    @ExcelProperty("每日消保视频候选")
+    private Boolean dailyTaskEnabled;
+
+    @Schema(description = "可信视频时长（秒）")
+    @TableField("duration_seconds")
+    @ExcelProperty("可信视频时长（秒）")
+    private Integer durationSeconds;
+
     @Schema(description = "排序")
     @TableField("seq")
     @ExcelProperty("排序")

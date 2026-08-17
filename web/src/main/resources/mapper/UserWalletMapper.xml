@@ -23,4 +23,11 @@
         ORDER BY uw.amount DESC
     </select>
 
+    <select id="selectIntegralForUpdate" resultMap="BaseResultMap">
+        SELECT id, user_id, type, amount, version
+        FROM user_wallet
+        WHERE user_id = #{userId} AND type = #{type}
+        LIMIT 1 FOR UPDATE
+    </select>
+
 </mapper>

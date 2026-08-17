@@ -10,13 +10,15 @@
         <result column="status" property="status" />
         <result column="url_video" property="urlVideo" />
         <result column="url_pic" property="urlPic" />
+        <result column="daily_task_enabled" property="dailyTaskEnabled" />
+        <result column="duration_seconds" property="durationSeconds" />
         <result column="seq" property="seq" />
         <result column="ticket_total" property="ticketTotal" />
     </resultMap>
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id, title, descr, status, url_video, url_pic, seq, ticket_total, create_time, update_time
+        id, title, descr, status, url_video, url_pic, daily_task_enabled, duration_seconds, seq, ticket_total, create_time, update_time
     </sql>
 
 </mapper>

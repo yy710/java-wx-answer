@@ -8,13 +8,15 @@
         <result column="topic_line_id" property="topicLineId" />
         <result column="title" property="title" />
         <result column="reward_amount" property="rewardAmount" />
+        <result column="daily_task_enabled" property="dailyTaskEnabled" />
+        <result column="finance_category" property="financeCategory" />
         <result column="create_time" property="createTime" />
         <result column="update_time" property="updateTime" />
     </resultMap>
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id, topic_line_id, title, reward_amount, create_time, update_time
+        id, topic_line_id, title, reward_amount, daily_task_enabled, finance_category, create_time, update_time
     </sql>
 
 </mapper>
